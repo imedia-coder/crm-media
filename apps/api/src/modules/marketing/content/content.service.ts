@@ -1,5 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { NotificationsService } from '../../../core/notifications/notifications.service';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
+import { MARKETING_PERMISSIONS } from '../../../core/auth/permissions.constants';
 import { CreateContentDto } from './dto/create-content.dto';
 import { ListContentQuery } from './dto/list-content.query';
 import { ScheduleContentDto } from './dto/schedule-content.dto';
@@ -7,7 +9,10 @@ import { UpdateContentDto } from './dto/update-content.dto';
 
 @Injectable()
 export class ContentService {
-  constructor(private readonly tenantPrisma: TenantPrismaService) {}
+  constructor(
+    private readonly tenantPrisma: TenantPrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   findAll(query: ListContentQuery) {
     return this.tenantPrisma.client.contentItem.findMany({
@@ -85,8 +90,15 @@ export class ContentService {
     return this.tenantPrisma.client.contentItem.update({ where: { id }, data });
   }
 
-  submit(id: string) {
-    return this.transition(id, 'DRAFT', { status: 'PENDING_VALIDATION' });
+  async submit(id: string) {
+    const content = await this.transition(id, 'DRAFT', { status: 'PENDING_VALIDATION' });
+    await this.notifications.notifyUsersWithPermission(
+      MARKETING_PERMISSIONS.CONTENT_VALIDATE,
+      'CONTENT_VALIDATION_NEEDED',
+      `À valider : ${content.title}`,
+      { link: '/dashboard/marketing/content' },
+    );
+    return content;
   }
 
   validate(id: string, validatedById: string) {

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, useEffect } from 'react';
+import { NotificationBell } from '@/components/notification-bell';
 import { useAuth } from '@/lib/auth-context';
 
 const NAV_SECTIONS = [
@@ -102,6 +103,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
           <div />
           <div className="flex items-center gap-4 text-sm">
+            <NotificationBell />
             <span className="text-slate-600">{displayName}</span>
             <button onClick={() => logout().then(() => router.push('/login'))} className="text-slate-500 underline">
               Déconnexion

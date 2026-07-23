@@ -206,3 +206,20 @@ export interface MediaAsset {
   contentItemId: string | null;
   createdAt: string;
 }
+
+export type NotificationType =
+  | 'TASK_ASSIGNED'
+  | 'QUOTE_ACCEPTED'
+  | 'INVOICE_PAID'
+  | 'CONTENT_VALIDATION_NEEDED'
+  | 'GENERIC';
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string | null;
+  link: string | null;
+  readAt: string | null;
+  createdAt: string;
+}

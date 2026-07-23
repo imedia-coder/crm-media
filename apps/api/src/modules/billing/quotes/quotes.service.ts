@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { NotificationsService } from '../../../core/notifications/notifications.service';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
 import { computeTotals, nextDocumentNumber } from '../money.util';
 import { renderDocumentPdf } from '../pdf.util';
@@ -8,7 +9,10 @@ import { UpdateQuoteDto } from './dto/update-quote.dto';
 
 @Injectable()
 export class QuotesService {
-  constructor(private readonly tenantPrisma: TenantPrismaService) {}
+  constructor(
+    private readonly tenantPrisma: TenantPrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   findAll(query: ListQuotesQuery) {
     return this.tenantPrisma.client.quote.findMany({
@@ -100,7 +104,16 @@ export class QuotesService {
   }
 
   async accept(id: string) {
-    return this.transition(id, 'SENT', 'ACCEPTED');
+    const quote = await this.transition(id, 'SENT', 'ACCEPTED');
+    if (quote.dealId) {
+      const deal = await this.tenantPrisma.client.deal.findUnique({ where: { id: quote.dealId } });
+      if (deal?.ownerId) {
+        await this.notifications.notifyUser(deal.ownerId, 'QUOTE_ACCEPTED', `Devis accepté : ${quote.number}`, {
+          link: `/dashboard/billing/quotes`,
+        });
+      }
+    }
+    return quote;
   }
 
   async decline(id: string) {

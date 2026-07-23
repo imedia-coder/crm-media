@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { NotificationsService } from '../../../core/notifications/notifications.service';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
 import { AddDependencyDto } from './dto/add-dependency.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -8,7 +9,10 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly tenantPrisma: TenantPrismaService) {}
+  constructor(
+    private readonly tenantPrisma: TenantPrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   findAll(query: ListTasksQuery) {
     return this.tenantPrisma.client.task.findMany({
@@ -49,7 +53,7 @@ export class TasksService {
       }
     }
 
-    return client.task.create({
+    const task = await client.task.create({
       data: {
         tenantId: this.tenantPrisma.tenantId,
         projectId: dto.projectId,
@@ -63,17 +67,33 @@ export class TasksService {
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
       },
     });
+
+    if (task.assigneeId) {
+      await this.notifications.notifyUser(task.assigneeId, 'TASK_ASSIGNED', `Nouvelle tâche : ${task.title}`, {
+        link: `/dashboard/projects/${task.projectId}`,
+      });
+    }
+
+    return task;
   }
 
   async update(id: string, dto: UpdateTaskDto) {
-    await this.findOneOrThrow(id);
-    return this.tenantPrisma.client.task.update({
+    const existing = await this.findOneOrThrow(id);
+    const task = await this.tenantPrisma.client.task.update({
       where: { id },
       data: {
         ...dto,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
       },
     });
+
+    if (dto.assigneeId && dto.assigneeId !== existing.assigneeId) {
+      await this.notifications.notifyUser(dto.assigneeId, 'TASK_ASSIGNED', `Nouvelle tâche : ${task.title}`, {
+        link: `/dashboard/projects/${task.projectId}`,
+      });
+    }
+
+    return task;
   }
 
   async remove(id: string) {

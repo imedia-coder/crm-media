@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './core/auth/auth.module';
+import { NotificationsModule } from './core/notifications/notifications.module';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { StorageModule } from './core/storage/storage.module';
 import { TenancyModule } from './core/tenancy/tenancy.module';
@@ -21,6 +22,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
     PrismaModule,
     StorageModule,
     TenancyModule,
+    NotificationsModule,
     AuthModule,
     CrmModule,
     ProjectsModule,

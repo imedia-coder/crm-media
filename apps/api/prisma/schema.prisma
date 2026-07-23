@@ -34,6 +34,7 @@ model Tenant {
   campaigns      Campaign[]
   contentItems   ContentItem[]
   mediaAssets    MediaAsset[]
+  notifications  Notification[]
 
   @@map("tenants")
 }
@@ -73,6 +74,7 @@ model User {
   authoredContent    ContentItem[] @relation("ContentAuthor")
   validatedContent   ContentItem[] @relation("ContentValidator")
   uploadedMedia      MediaAsset[]
+  notifications      Notification[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -490,6 +492,34 @@ model MediaAsset {
 
   @@index([tenantId])
   @@map("media_assets")
+}
+
+// ---------- NOTIFICATIONS ----------
+
+enum NotificationType {
+  TASK_ASSIGNED
+  QUOTE_ACCEPTED
+  INVOICE_PAID
+  CONTENT_VALIDATION_NEEDED
+  GENERIC
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  tenantId  String
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType @default(GENERIC)
+  title     String
+  message   String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([tenantId])
+  @@index([userId, readAt])
+  @@map("notifications")
 }
 
 // ---------- BILLING ----------

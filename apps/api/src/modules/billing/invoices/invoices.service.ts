@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { NotificationsService } from '../../../core/notifications/notifications.service';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
 import { computeTotals, nextDocumentNumber, round2 } from '../money.util';
 import { renderDocumentPdf } from '../pdf.util';
@@ -9,7 +10,28 @@ import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 
 @Injectable()
 export class InvoicesService {
-  constructor(private readonly tenantPrisma: TenantPrismaService) {}
+  constructor(
+    private readonly tenantPrisma: TenantPrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
+
+  // Called after the payment transaction has committed (never from inside
+  // it — this uses its own separate mini-transaction via
+  // TenantPrismaService, so nesting it inside an already-open one would
+  // mean two transactions racing for connections, and if the outer one
+  // ever rolled back afterwards this notification would already be sent).
+  private async notifyIfNewlyPaid(invoiceId: string, isNowPaid: boolean) {
+    if (!isNowPaid) return;
+    const invoice = await this.tenantPrisma.client.invoice.findUnique({ where: { id: invoiceId } });
+    if (invoice?.projectId) {
+      const project = await this.tenantPrisma.client.project.findUnique({ where: { id: invoice.projectId } });
+      if (project?.managerId) {
+        await this.notifications.notifyUser(project.managerId, 'INVOICE_PAID', `Facture payée : ${invoice.number}`, {
+          link: '/dashboard/billing/invoices',
+        });
+      }
+    }
+  }
 
   findAll(query: ListInvoicesQuery) {
     return this.tenantPrisma.client.invoice.findMany({
@@ -149,7 +171,7 @@ export class InvoicesService {
   }
 
   async recordPayment(id: string, dto: RecordPaymentDto) {
-    return this.tenantPrisma.transaction(async (tx) => {
+    const result = await this.tenantPrisma.transaction(async (tx) => {
       const invoice = await tx.invoice.findUnique({ where: { id }, include: { lines: true, payments: true } });
       if (!invoice) throw new NotFoundException('Invoice not found');
       if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') {
@@ -169,6 +191,9 @@ export class InvoicesService {
       });
       return this.withComputedFields(updated);
     });
+
+    await this.notifyIfNewlyPaid(id, result.status === 'PAID');
+    return result;
   }
 
   /**
@@ -177,7 +202,7 @@ export class InvoicesService {
    * records a single payment covering the full remaining balance.
    */
   async markAsPaid(id: string, method: RecordPaymentDto['method']) {
-    return this.tenantPrisma.transaction(async (tx) => {
+    const result = await this.tenantPrisma.transaction(async (tx) => {
       const invoice = await tx.invoice.findUnique({ where: { id }, include: { lines: true, payments: true } });
       if (!invoice) throw new NotFoundException('Invoice not found');
       if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') {
@@ -198,6 +223,9 @@ export class InvoicesService {
       });
       return this.withComputedFields(updated);
     });
+
+    await this.notifyIfNewlyPaid(id, result.status === 'PAID');
+    return result;
   }
 
   async remove(id: string) {
