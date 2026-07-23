@@ -3,3 +3,6 @@ node_modules
 .env
 
 /generated/prisma
+
+# Local document storage (dev only — Phase 3 swaps this for S3-compatible storage)
+/storage

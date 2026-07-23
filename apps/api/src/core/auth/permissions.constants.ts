@@ -14,3 +14,8 @@ export const PROJECT_PERMISSIONS = {
   TASKS_READ: 'projects.tasks.read',
   TASKS_WRITE: 'projects.tasks.write',
 } as const;
+
+export const DOCUMENT_PERMISSIONS = {
+  DOCUMENTS_READ: 'documents.documents.read',
+  DOCUMENTS_WRITE: 'documents.documents.write',
+} as const;

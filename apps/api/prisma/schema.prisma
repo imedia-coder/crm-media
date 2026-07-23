@@ -338,6 +338,7 @@ model DocumentVersion {
   document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   versionNumber Int
   storageKey    String
+  originalName  String
   mimeType      String
   sizeBytes     Int
   uploadedById  String?
