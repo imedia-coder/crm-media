@@ -15,6 +15,7 @@ import { MarketingModule } from './modules/marketing/marketing.module';
 import { PlanningModule } from './modules/planning/planning.module';
 import { PortalModule } from './modules/portal/portal.module';
 import { ProjectsModule } from './modules/projects/projects.module';
+import { ReportingModule } from './modules/reporting/reporting.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
     PlanningModule,
     DashboardModule,
     MarketingModule,
+    ReportingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

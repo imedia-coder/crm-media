@@ -214,6 +214,32 @@ export type NotificationType =
   | 'CONTENT_VALIDATION_NEEDED'
   | 'GENERIC';
 
+export interface RevenueMonth {
+  month: string;
+  total: number;
+}
+
+export interface PipelineStageReport {
+  stageId: string;
+  name: string;
+  isWon: boolean;
+  isLost: boolean;
+  dealCount: number;
+  totalValue: number;
+}
+
+export interface ProjectProfitability {
+  projectId: string;
+  name: string;
+  company: string | null;
+  status: ProjectStatus;
+  budget: number | null;
+  hoursLogged: number;
+  taskCompletion: number;
+  invoicedTotal: number;
+  paidTotal: number;
+}
+
 export interface Notification {
   id: string;
   type: NotificationType;

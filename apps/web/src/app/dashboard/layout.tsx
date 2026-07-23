@@ -41,6 +41,7 @@ const NAV_SECTIONS = [
     links: [
       { href: '/dashboard/billing/quotes', label: 'Devis' },
       { href: '/dashboard/billing/invoices', label: 'Factures' },
+      { href: '/dashboard/reporting', label: 'Reporting' },
     ],
   },
 ];
