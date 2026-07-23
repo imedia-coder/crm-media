@@ -1,0 +1,445 @@
+// Prisma schema — Phase 1 (MVP)
+// Multi-tenant: every business table carries a non-null tenantId, enforced
+// additionally at the DB level via Row-Level Security (see prisma/migrations
+// sql added after `prisma migrate dev`).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------- CORE ----------
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users          User[]
+  roles          Role[]
+  companies      Company[]
+  contacts       Contact[]
+  pipelineStages PipelineStage[]
+  deals          Deal[]
+  projects       Project[]
+  documents      Document[]
+  quotes         Quote[]
+  invoices       Invoice[]
+
+  @@map("tenants")
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  tenantId     String
+  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email        String
+  passwordHash String
+  firstName    String
+  lastName     String
+  status       UserStatus @default(INVITED)
+  mfaSecret    String?
+  isClient     Boolean    @default(false)
+  roleId       String?
+  role         Role?      @relation(fields: [roleId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  ownedDeals    Deal[]            @relation("DealOwner")
+  ownedProjects Project[]         @relation("ProjectManager")
+  assignedTasks Task[]            @relation("TaskAssignee")
+  timeEntries   TimeEntry[]
+  uploadedDocs  DocumentVersion[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Role {
+  id          String       @id @default(uuid())
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  permissions Permission[]
+  users       User[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model Permission {
+  id     String @id @default(uuid())
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  // e.g. "crm.deals.read", "billing.invoices.write"
+  action String
+
+  @@unique([roleId, action])
+  @@map("permissions")
+}
+
+// ---------- CRM ----------
+
+model Company {
+  id               String    @id @default(uuid())
+  tenantId         String
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name             String
+  sizeRange        String?
+  estimatedRevenue Decimal?  @db.Decimal(14, 2)
+  isClient         Boolean   @default(false)
+  clientSince      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  contacts Contact[]
+  deals    Deal[]
+  projects Project[]
+  quotes   Quote[]
+  invoices Invoice[]
+
+  @@index([tenantId])
+  @@map("companies")
+}
+
+model Contact {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deals Deal[]
+
+  @@index([tenantId])
+  @@index([companyId])
+  @@map("contacts")
+}
+
+model PipelineStage {
+  id       String  @id @default(uuid())
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name     String
+  order    Int
+  isWon    Boolean @default(false)
+  isLost   Boolean @default(false)
+
+  deals        Deal[]
+  stageHistory DealStageHistory[]
+
+  @@unique([tenantId, order])
+  @@index([tenantId])
+  @@map("pipeline_stages")
+}
+
+model Deal {
+  id                  String        @id @default(uuid())
+  tenantId            String
+  tenant              Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title               String
+  companyId           String?
+  company             Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  contactId           String?
+  contact             Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  stageId             String
+  stage               PipelineStage @relation(fields: [stageId], references: [id])
+  ownerId             String?
+  owner               User?         @relation("DealOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  estimatedValue      Decimal?      @db.Decimal(14, 2)
+  winProbability      Int?
+  source              String?
+  sourceSocialNetwork String?
+  nextFollowUpAt      DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  stageHistory DealStageHistory[]
+  quotes       Quote[]
+
+  @@index([tenantId])
+  @@index([stageId])
+  @@map("deals")
+}
+
+model DealStageHistory {
+  id        String        @id @default(uuid())
+  dealId    String
+  deal      Deal          @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  stageId   String
+  stage     PipelineStage @relation(fields: [stageId], references: [id])
+  enteredAt DateTime      @default(now())
+
+  @@index([dealId])
+  @@map("deal_stage_history")
+}
+
+// ---------- PROJECTS ----------
+
+enum ProjectStatus {
+  PLANNED
+  IN_PROGRESS
+  ON_HOLD
+  DONE
+  ARCHIVED
+}
+
+model Project {
+  id        String        @id @default(uuid())
+  tenantId  String
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  companyId String?
+  company   Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  name      String
+  status    ProjectStatus @default(PLANNED)
+  budget    Decimal?      @db.Decimal(14, 2)
+  managerId String?
+  manager   User?         @relation("ProjectManager", fields: [managerId], references: [id], onDelete: SetNull)
+  startDate DateTime?
+  dueDate   DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  tasks     Task[]
+  documents Document[]
+  quotes    Quote[]
+  invoices  Invoice[]
+
+  @@index([tenantId])
+  @@index([companyId])
+  @@map("projects")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id             String       @id @default(uuid())
+  tenantId       String
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentTaskId   String?
+  parentTask     Task?        @relation("TaskSubtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subtasks       Task[]       @relation("TaskSubtasks")
+  title          String
+  description    String?
+  status         TaskStatus   @default(TODO)
+  priority       TaskPriority @default(MEDIUM)
+  assigneeId     String?
+  assignee       User?        @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  estimatedHours Decimal?     @db.Decimal(6, 2)
+  dueDate        DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  dependsOn   TaskDependency[] @relation("DependentTask")
+  dependedBy  TaskDependency[] @relation("BlockingTask")
+  timeEntries TimeEntry[]
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@map("tasks")
+}
+
+model TaskDependency {
+  id              String @id @default(uuid())
+  taskId          String
+  task            Task   @relation("DependentTask", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnTaskId String
+  dependsOnTask   Task   @relation("BlockingTask", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnTaskId])
+  @@map("task_dependencies")
+}
+
+model TimeEntry {
+  id       String   @id @default(uuid())
+  tenantId String
+  taskId   String
+  task     Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  minutes  Int
+  loggedAt DateTime @default(now())
+  note     String?
+
+  @@index([tenantId])
+  @@index([taskId])
+  @@map("time_entries")
+}
+
+// ---------- DOCUMENTS ----------
+
+model Document {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  versions DocumentVersion[]
+
+  @@index([tenantId])
+  @@index([projectId])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id            String   @id @default(uuid())
+  documentId    String
+  document      Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  versionNumber Int
+  storageKey    String
+  mimeType      String
+  sizeBytes     Int
+  uploadedById  String?
+  uploadedBy    User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+
+  @@unique([documentId, versionNumber])
+  @@map("document_versions")
+}
+
+// ---------- BILLING ----------
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+model Quote {
+  id        String      @id @default(uuid())
+  tenantId  String
+  tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company     @relation(fields: [companyId], references: [id])
+  dealId    String?
+  deal      Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  projectId String?
+  project   Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  number    String
+  status    QuoteStatus @default(DRAFT)
+  currency  String      @default("EUR")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  lines    QuoteLine[]
+  invoices Invoice[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@map("quotes")
+}
+
+model QuoteLine {
+  id          String  @id @default(uuid())
+  quoteId     String
+  quote       Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(14, 2)
+  vatRate     Decimal @db.Decimal(5, 2) @default(20)
+
+  @@map("quote_lines")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model Invoice {
+  id        String        @id @default(uuid())
+  tenantId  String
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company       @relation(fields: [companyId], references: [id])
+  quoteId   String?
+  quote     Quote?        @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  projectId String?
+  project   Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  number    String
+  status    InvoiceStatus @default(DRAFT)
+  currency  String        @default("EUR")
+  dueDate   DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  lines    InvoiceLine[]
+  payments Payment[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Decimal @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(14, 2)
+  vatRate     Decimal @db.Decimal(5, 2) @default(20)
+
+  @@map("invoice_lines")
+}
+
+enum PaymentMethod {
+  STRIPE
+  PAYPAL
+  BANK_TRANSFER
+  CARD
+  OTHER
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  invoiceId String
+  invoice   Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount    Decimal       @db.Decimal(14, 2)
+  method    PaymentMethod
+  paidAt    DateTime      @default(now())
+  reference String?
+
+  @@map("payments")
+}
