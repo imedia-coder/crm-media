@@ -19,3 +19,10 @@ export const DOCUMENT_PERMISSIONS = {
   DOCUMENTS_READ: 'documents.documents.read',
   DOCUMENTS_WRITE: 'documents.documents.write',
 } as const;
+
+export const BILLING_PERMISSIONS = {
+  QUOTES_READ: 'billing.quotes.read',
+  QUOTES_WRITE: 'billing.quotes.write',
+  INVOICES_READ: 'billing.invoices.read',
+  INVOICES_WRITE: 'billing.invoices.write',
+} as const;
