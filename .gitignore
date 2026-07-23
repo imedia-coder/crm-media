@@ -1,0 +1,13 @@
+.claude/settings.local.json
+node_modules/
+.turbo/
+dist/
+.next/
+out/
+.env
+.env.*
+!.env.example
+coverage/
+*.log
+.DS_Store
+.pnpm-store/

@@ -1,0 +1,19 @@
+{
+  "name": "crm-media",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "turbo": "^2.1.0",
+    "typescript": "^5.6.0",
+    "prettier": "^3.3.0"
+  },
+  "packageManager": "pnpm@11.16.0",
+  "engines": {
+    "node": ">=20"
+  }
+}
