@@ -9,6 +9,7 @@ import { TenancyModule } from './core/tenancy/tenancy.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { PortalModule } from './modules/portal/portal.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
     ProjectsModule,
     DocumentsModule,
     BillingModule,
+    PortalModule,
   ],
   controllers: [AppController],
   providers: [AppService],

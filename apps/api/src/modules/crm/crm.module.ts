@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AuthModule } from '../../core/auth/auth.module';
 import { TenancyModule } from '../../core/tenancy/tenancy.module';
 import { CompaniesController } from './companies/companies.controller';
 import { CompaniesService } from './companies/companies.service';
@@ -10,7 +11,7 @@ import { PipelineStagesController } from './pipeline-stages/pipeline-stages.cont
 import { PipelineStagesService } from './pipeline-stages/pipeline-stages.service';
 
 @Module({
-  imports: [TenancyModule],
+  imports: [TenancyModule, AuthModule],
   controllers: [CompaniesController, ContactsController, PipelineStagesController, DealsController],
   providers: [CompaniesService, ContactsService, PipelineStagesService, DealsService],
 })

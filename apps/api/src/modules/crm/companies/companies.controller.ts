@@ -3,6 +3,7 @@ import { RequirePermissions } from '../../../core/auth/decorators/permissions.de
 import { CRM_PERMISSIONS } from '../../../core/auth/permissions.constants';
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
+import { InviteClientDto } from './dto/invite-client.dto';
 import { ListCompaniesQuery } from './dto/list-companies.query';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 
@@ -38,5 +39,11 @@ export class CompaniesController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.companiesService.remove(id);
+  }
+
+  @RequirePermissions(CRM_PERMISSIONS.COMPANIES_WRITE)
+  @Post(':id/invite-client')
+  inviteClient(@Param('id') id: string, @Body() dto: InviteClientDto) {
+    return this.companiesService.inviteClient(id, dto);
   }
 }

@@ -52,6 +52,8 @@ model User {
   mfaSecret    String?
   mfaEnabledAt DateTime?
   isClient     Boolean    @default(false)
+  companyId    String?
+  company      Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
   roleId       String?
   role         Role?      @relation(fields: [roleId], references: [id], onDelete: SetNull)
   refreshTokens RefreshToken[]
@@ -120,11 +122,12 @@ model Company {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  contacts Contact[]
-  deals    Deal[]
-  projects Project[]
-  quotes   Quote[]
-  invoices Invoice[]
+  contacts    Contact[]
+  deals       Deal[]
+  projects    Project[]
+  quotes      Quote[]
+  invoices    Invoice[]
+  clientUsers User[]
 
   @@index([tenantId])
   @@map("companies")

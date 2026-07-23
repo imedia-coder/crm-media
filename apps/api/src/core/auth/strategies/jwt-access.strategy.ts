@@ -20,6 +20,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt-access') 
       roleId: payload.roleId,
       permissions: payload.permissions,
       isClient: payload.isClient,
+      companyId: payload.companyId,
     };
   }
 }

@@ -13,6 +13,7 @@ type UserWithRole = {
   tenantId: string;
   roleId: string | null;
   isClient: boolean;
+  companyId: string | null;
   role: { permissions: { action: string }[] } | null;
 };
 
@@ -31,6 +32,7 @@ export class AuthService {
       tenantId: user.tenantId,
       roleId: user.roleId,
       isClient: user.isClient,
+      companyId: user.companyId,
       permissions: user.role?.permissions.map((p) => p.action) ?? [],
     };
   }
@@ -166,5 +168,15 @@ export class AuthService {
       where: { id: userId },
       data: { mfaSecret: null, mfaEnabledAt: null },
     });
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await this.platformPrisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const matches = await this.passwordService.compare(currentPassword, user.passwordHash);
+    if (!matches) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+    const passwordHash = await this.passwordService.hash(newPassword);
+    await this.platformPrisma.user.update({ where: { id: userId }, data: { passwordHash } });
   }
 }

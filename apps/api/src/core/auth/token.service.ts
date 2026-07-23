@@ -29,6 +29,7 @@ export class TokenService {
       roleId: user.roleId,
       permissions: user.permissions,
       isClient: user.isClient,
+      companyId: user.companyId,
     };
     return this.jwt.sign(payload, {
       secret: process.env.JWT_ACCESS_SECRET,

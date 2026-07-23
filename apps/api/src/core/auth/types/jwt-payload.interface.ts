@@ -4,6 +4,7 @@ export interface JwtPayload {
   roleId: string | null;
   permissions: string[];
   isClient: boolean;
+  companyId: string | null;
 }
 
 export interface AuthenticatedUser {
@@ -12,4 +13,5 @@ export interface AuthenticatedUser {
   roleId: string | null;
   permissions: string[];
   isClient: boolean;
+  companyId: string | null;
 }

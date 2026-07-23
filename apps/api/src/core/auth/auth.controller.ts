@@ -2,6 +2,7 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { MfaCodeDto } from './dto/mfa-code.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -54,5 +55,11 @@ export class AuthController {
   @Post('mfa/disable')
   async disableMfa(@CurrentUser() user: AuthenticatedUser, @Body() dto: MfaCodeDto) {
     await this.authService.disableMfa(user.id, dto.code);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('change-password')
+  async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() dto: ChangePasswordDto) {
+    await this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
   }
 }
