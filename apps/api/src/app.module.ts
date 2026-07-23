@@ -10,6 +10,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { MarketingModule } from './modules/marketing/marketing.module';
 import { PlanningModule } from './modules/planning/planning.module';
 import { PortalModule } from './modules/portal/portal.module';
 import { ProjectsModule } from './modules/projects/projects.module';
@@ -28,6 +29,7 @@ import { ProjectsModule } from './modules/projects/projects.module';
     PortalModule,
     PlanningModule,
     DashboardModule,
+    MarketingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

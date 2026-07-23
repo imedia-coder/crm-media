@@ -35,3 +35,13 @@ export const PLANNING_PERMISSIONS = {
 export const DASHBOARD_PERMISSIONS = {
   VIEW: 'dashboard.view',
 } as const;
+
+export const MARKETING_PERMISSIONS = {
+  CONTENT_READ: 'marketing.content.read',
+  CONTENT_WRITE: 'marketing.content.write',
+  CONTENT_VALIDATE: 'marketing.content.validate',
+  MEDIA_READ: 'marketing.media.read',
+  MEDIA_WRITE: 'marketing.media.write',
+  CAMPAIGNS_READ: 'marketing.campaigns.read',
+  CAMPAIGNS_WRITE: 'marketing.campaigns.write',
+} as const;

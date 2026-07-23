@@ -31,6 +31,9 @@ model Tenant {
   quotes         Quote[]
   invoices       Invoice[]
   appointments   Appointment[]
+  campaigns      Campaign[]
+  contentItems   ContentItem[]
+  mediaAssets    MediaAsset[]
 
   @@map("tenants")
 }
@@ -67,6 +70,9 @@ model User {
   timeEntries   TimeEntry[]
   uploadedDocs  DocumentVersion[]
   organizedAppointments Appointment[]
+  authoredContent    ContentItem[] @relation("ContentAuthor")
+  validatedContent   ContentItem[] @relation("ContentValidator")
+  uploadedMedia      MediaAsset[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -131,6 +137,8 @@ model Company {
   invoices     Invoice[]
   clientUsers  User[]
   appointments Appointment[]
+  campaigns    Campaign[]
+  contentItems ContentItem[]
 
   @@index([tenantId])
   @@map("companies")
@@ -245,6 +253,7 @@ model Project {
   quotes       Quote[]
   invoices     Invoice[]
   appointments Appointment[]
+  contentItems ContentItem[]
 
   @@index([tenantId])
   @@index([companyId])
@@ -379,6 +388,108 @@ model Appointment {
   @@index([tenantId])
   @@index([startAt])
   @@map("appointments")
+}
+
+// ---------- MARKETING ----------
+
+enum CampaignStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model Campaign {
+  id          String         @id @default(uuid())
+  tenantId    String
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  companyId   String?
+  company     Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  objective   String?
+  status      CampaignStatus @default(PLANNED)
+  startDate   DateTime?
+  endDate     DateTime?
+  budget      Decimal?       @db.Decimal(14, 2)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  contentItems ContentItem[]
+  mediaAssets  MediaAsset[]
+
+  @@index([tenantId])
+  @@map("campaigns")
+}
+
+enum ContentType {
+  POST
+  STORY
+  REEL
+  VIDEO
+  ARTICLE
+  NEWSLETTER
+  OTHER
+}
+
+enum ContentStatus {
+  DRAFT
+  PENDING_VALIDATION
+  VALIDATED
+  REJECTED
+  SCHEDULED
+  PUBLISHED
+}
+
+model ContentItem {
+  id             String        @id @default(uuid())
+  tenantId       String
+  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title          String
+  body           String?
+  type           ContentType   @default(POST)
+  status         ContentStatus @default(DRAFT)
+  hashtags       String[]      @default([])
+  scheduledAt    DateTime?
+  publishedAt    DateTime?
+  companyId      String?
+  company        Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  campaignId     String?
+  campaign       Campaign?     @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  projectId      String?
+  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  authorId       String?
+  author         User?         @relation("ContentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  validatedById  String?
+  validatedBy    User?         @relation("ContentValidator", fields: [validatedById], references: [id], onDelete: SetNull)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  mediaAssets MediaAsset[]
+
+  @@index([tenantId])
+  @@index([scheduledAt])
+  @@map("content_items")
+}
+
+model MediaAsset {
+  id            String       @id @default(uuid())
+  tenantId      String
+  tenant        Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name          String
+  storageKey    String
+  mimeType      String
+  sizeBytes     Int
+  tags          String[]     @default([])
+  campaignId    String?
+  campaign      Campaign?    @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  contentItemId String?
+  contentItem   ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+  uploadedById  String?
+  uploadedBy    User?        @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime     @default(now())
+
+  @@index([tenantId])
+  @@map("media_assets")
 }
 
 // ---------- BILLING ----------

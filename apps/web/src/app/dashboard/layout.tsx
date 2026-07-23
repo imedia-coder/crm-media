@@ -28,6 +28,14 @@ const NAV_SECTIONS = [
     ],
   },
   {
+    title: 'Marketing',
+    links: [
+      { href: '/dashboard/marketing/content', label: 'Calendrier éditorial' },
+      { href: '/dashboard/marketing/media', label: 'Médiathèque' },
+      { href: '/dashboard/marketing/campaigns', label: 'Campagnes' },
+    ],
+  },
+  {
     title: 'Facturation',
     links: [
       { href: '/dashboard/billing/quotes', label: 'Devis' },

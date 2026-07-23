@@ -14,9 +14,14 @@ import { dirname, extname, join } from 'path';
 export class StorageService {
   private readonly root = process.env.STORAGE_ROOT ?? join(process.cwd(), 'storage');
 
-  buildKey(tenantId: string, documentId: string, versionNumber: number, originalName: string): string {
+  /**
+   * `namespace` groups keys under a subfolder (e.g. a documentId, or just
+   * "media" for the shared media library); `discriminator` disambiguates
+   * within it (a document's version number, a timestamp, etc.).
+   */
+  buildKey(tenantId: string, namespace: string, discriminator: string | number, originalName: string): string {
     const ext = extname(originalName).slice(0, 20);
-    return `${tenantId}/${documentId}/v${versionNumber}-${randomUUID()}${ext}`;
+    return `${tenantId}/${namespace}/v${discriminator}-${randomUUID()}${ext}`;
   }
 
   async save(key: string, content: Buffer): Promise<void> {

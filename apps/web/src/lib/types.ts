@@ -160,3 +160,49 @@ export interface Invoice {
   amountDue?: number;
   createdAt: string;
 }
+
+export type CampaignStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+
+export interface Campaign {
+  id: string;
+  name: string;
+  companyId: string | null;
+  objective: string | null;
+  status: CampaignStatus;
+  startDate: string | null;
+  endDate: string | null;
+  budget: string | null;
+  company?: Company | null;
+  _count?: { contentItems: number };
+}
+
+export type ContentType = 'POST' | 'STORY' | 'REEL' | 'VIDEO' | 'ARTICLE' | 'NEWSLETTER' | 'OTHER';
+export type ContentStatus = 'DRAFT' | 'PENDING_VALIDATION' | 'VALIDATED' | 'REJECTED' | 'SCHEDULED' | 'PUBLISHED';
+
+export interface ContentItem {
+  id: string;
+  title: string;
+  body: string | null;
+  type: ContentType;
+  status: ContentStatus;
+  hashtags: string[];
+  scheduledAt: string | null;
+  publishedAt: string | null;
+  companyId: string | null;
+  campaignId: string | null;
+  company?: { id: string; name: string } | null;
+  campaign?: { id: string; name: string } | null;
+  author?: { id: string; firstName: string; lastName: string } | null;
+  mediaAssets?: MediaAsset[];
+}
+
+export interface MediaAsset {
+  id: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+  tags: string[];
+  campaignId: string | null;
+  contentItemId: string | null;
+  createdAt: string;
+}
