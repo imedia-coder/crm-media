@@ -6,9 +6,17 @@ import { AuthModule } from './core/auth/auth.module';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { TenancyModule } from './core/tenancy/tenancy.module';
 import { CrmModule } from './modules/crm/crm.module';
+import { ProjectsModule } from './modules/projects/projects.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), PrismaModule, TenancyModule, AuthModule, CrmModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    TenancyModule,
+    AuthModule,
+    CrmModule,
+    ProjectsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

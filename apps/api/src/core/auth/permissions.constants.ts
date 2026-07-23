@@ -7,3 +7,10 @@ export const CRM_PERMISSIONS = {
   DEALS_WRITE: 'crm.deals.write',
   PIPELINE_MANAGE: 'crm.pipeline.manage',
 } as const;
+
+export const PROJECT_PERMISSIONS = {
+  PROJECTS_READ: 'projects.projects.read',
+  PROJECTS_WRITE: 'projects.projects.write',
+  TASKS_READ: 'projects.tasks.read',
+  TASKS_WRITE: 'projects.tasks.write',
+} as const;
