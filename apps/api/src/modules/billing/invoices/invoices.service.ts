@@ -171,6 +171,35 @@ export class InvoicesService {
     });
   }
 
+  /**
+   * One-click confirmation that the client has paid in full, for teams
+   * that just want to tick a box rather than key in an exact amount —
+   * records a single payment covering the full remaining balance.
+   */
+  async markAsPaid(id: string, method: RecordPaymentDto['method']) {
+    return this.tenantPrisma.transaction(async (tx) => {
+      const invoice = await tx.invoice.findUnique({ where: { id }, include: { lines: true, payments: true } });
+      if (!invoice) throw new NotFoundException('Invoice not found');
+      if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') {
+        throw new ConflictException(`Cannot record a payment on a ${invoice.status.toLowerCase()} invoice`);
+      }
+
+      const totals = computeTotals(invoice.lines);
+      const paidSoFar = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      const remaining = round2(totals.total - paidSoFar);
+      if (remaining > 0) {
+        await tx.payment.create({ data: { invoiceId: id, amount: remaining, method } });
+      }
+
+      const updated = await tx.invoice.update({
+        where: { id },
+        data: { status: 'PAID' },
+        include: { lines: true, payments: true },
+      });
+      return this.withComputedFields(updated);
+    });
+  }
+
   async remove(id: string) {
     const invoice = await this.tenantPrisma.client.invoice.findUnique({ where: { id } });
     if (!invoice) throw new NotFoundException('Invoice not found');

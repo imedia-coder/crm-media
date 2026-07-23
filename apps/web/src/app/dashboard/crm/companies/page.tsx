@@ -1,26 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
+import { mutate } from 'swr';
 import { Field } from '@/components/form-field';
 import { api, ApiError } from '@/lib/api';
 import { Company } from '@/lib/types';
+import { useApi } from '@/lib/use-api';
 
 export default function CompaniesPage() {
-  const [companies, setCompanies] = useState<Company[] | null>(null);
+  const { data: companies, isLoading, error: loadError } = useApi<Company[]>('/crm/companies');
   const [name, setName] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  async function load() {
-    const data = await api.get<Company[]>('/crm/companies');
-    setCompanies(data);
-  }
-
-  useEffect(() => {
-    load().catch((err) => setError(err instanceof ApiError ? err.message : 'Erreur de chargement'));
-  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -30,7 +23,7 @@ export default function CompaniesPage() {
       await api.post('/crm/companies', { name, isClient });
       setName('');
       setIsClient(false);
-      await load();
+      mutate('/crm/companies');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erreur');
     } finally {
@@ -60,6 +53,8 @@ export default function CompaniesPage() {
       </form>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {loadError && <p className="mb-4 text-sm text-red-600">Impossible de charger les entreprises.</p>}
+      {isLoading && <p className="text-sm text-slate-400">Chargement...</p>}
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">

@@ -26,3 +26,12 @@ export const BILLING_PERMISSIONS = {
   INVOICES_READ: 'billing.invoices.read',
   INVOICES_WRITE: 'billing.invoices.write',
 } as const;
+
+export const PLANNING_PERMISSIONS = {
+  APPOINTMENTS_READ: 'planning.appointments.read',
+  APPOINTMENTS_WRITE: 'planning.appointments.write',
+} as const;
+
+export const DASHBOARD_PERMISSIONS = {
+  VIEW: 'dashboard.view',
+} as const;

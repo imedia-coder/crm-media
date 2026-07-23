@@ -1,40 +1,37 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
+import { mutate } from 'swr';
 import { Badge } from '@/components/badge';
 import { Field } from '@/components/form-field';
 import { api, ApiError } from '@/lib/api';
 import { Company, Project } from '@/lib/types';
+import { useApi } from '@/lib/use-api';
+
+function progress(project: Project): number {
+  if (!project.tasks || project.tasks.length === 0) return 0;
+  const done = project.tasks.filter((t) => t.status === 'DONE').length;
+  return Math.round((done / project.tasks.length) * 100);
+}
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const { data: projects, isLoading } = useApi<Project[]>('/projects');
+  const { data: companies } = useApi<Company[]>('/crm/companies');
   const [name, setName] = useState('');
   const [companyId, setCompanyId] = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [error, setError] = useState<string | null>(null);
-
-  async function load() {
-    const [projectsData, companiesData] = await Promise.all([
-      api.get<Project[]>('/projects'),
-      api.get<Company[]>('/crm/companies'),
-    ]);
-    setProjects(projectsData);
-    setCompanies(companiesData);
-  }
-
-  useEffect(() => {
-    load().catch((err) => setError(err instanceof ApiError ? err.message : 'Erreur de chargement'));
-  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     try {
-      await api.post('/projects', { name, companyId: companyId || undefined });
+      await api.post('/projects', { name, companyId: companyId || undefined, dueDate: dueDate || undefined });
       setName('');
       setCompanyId('');
-      await load();
+      setDueDate('');
+      mutate('/projects');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erreur');
     }
@@ -56,12 +53,21 @@ export default function ProjectsPage() {
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           >
             <option value="">—</option>
-            {companies.map((c) => (
+            {companies?.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}
           </select>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-slate-700">Échéance</span>
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          />
         </label>
         <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
           Créer
@@ -69,41 +75,40 @@ export default function ProjectsPage() {
       </form>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {isLoading && <p className="text-sm text-slate-400">Chargement...</p>}
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
-            <tr>
-              <th className="px-4 py-2">Projet</th>
-              <th className="px-4 py-2">Entreprise</th>
-              <th className="px-4 py-2">Statut</th>
-              <th className="px-4 py-2">Tâches</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {projects?.map((project) => (
-              <tr key={project.id} className="hover:bg-slate-50">
-                <td className="px-4 py-2">
-                  <Link href={`/dashboard/projects/${project.id}`} className="font-medium text-slate-900 underline">
-                    {project.name}
-                  </Link>
-                </td>
-                <td className="px-4 py-2 text-slate-600">{project.company?.name ?? '—'}</td>
-                <td className="px-4 py-2">
-                  <Badge value={project.status} />
-                </td>
-                <td className="px-4 py-2 text-slate-600">{project._count?.tasks ?? 0}</td>
-              </tr>
-            ))}
-            {projects?.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                  Aucun projet pour l&apos;instant.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {projects?.map((project) => {
+          const pct = progress(project);
+          const overdue = project.dueDate && new Date(project.dueDate) < new Date() && project.status !== 'DONE';
+          return (
+            <Link
+              key={project.id}
+              href={`/dashboard/projects/${project.id}`}
+              className="rounded-lg border border-slate-200 bg-white p-4 hover:border-slate-400"
+            >
+              <div className="mb-2 flex items-start justify-between">
+                <p className="font-medium text-slate-900">{project.name}</p>
+                <Badge value={project.status} />
+              </div>
+              <p className="mb-3 text-sm text-slate-500">{project.company?.name ?? 'Interne'}</p>
+              <div className="mb-1 h-1.5 w-full rounded-full bg-slate-100">
+                <div className="h-1.5 rounded-full bg-slate-900" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="flex items-center justify-between text-xs text-slate-500">
+                <span>{pct}% des tâches faites</span>
+                {project.dueDate && (
+                  <span className={overdue ? 'font-medium text-red-600' : ''}>
+                    {new Date(project.dueDate).toLocaleDateString('fr-FR')}
+                  </span>
+                )}
+              </div>
+            </Link>
+          );
+        })}
+        {projects?.length === 0 && (
+          <p className="col-span-full py-6 text-center text-slate-400">Aucun projet pour l&apos;instant.</p>
+        )}
       </div>
     </div>
   );

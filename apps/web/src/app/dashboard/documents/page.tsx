@@ -1,31 +1,20 @@
 'use client';
 
-import { FormEvent, useEffect, useRef, useState } from 'react';
-import { api, apiUpload, ApiError } from '@/lib/api';
+import { FormEvent, useRef, useState } from 'react';
+import { mutate } from 'swr';
+import { apiUpload, ApiError } from '@/lib/api';
 import { downloadFile } from '@/lib/download';
 import { DocumentItem, Project } from '@/lib/types';
+import { useApi } from '@/lib/use-api';
 
 export default function DocumentsPage() {
-  const [documents, setDocuments] = useState<DocumentItem[] | null>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const { data: documents, isLoading } = useApi<DocumentItem[]>('/documents');
+  const { data: projects } = useApi<Project[]>('/projects');
   const [projectId, setProjectId] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  async function load() {
-    const [docsData, projectsData] = await Promise.all([
-      api.get<DocumentItem[]>('/documents'),
-      api.get<Project[]>('/projects'),
-    ]);
-    setDocuments(docsData);
-    setProjects(projectsData);
-  }
-
-  useEffect(() => {
-    load().catch((err) => setError(err instanceof ApiError ? err.message : 'Erreur de chargement'));
-  }, []);
 
   async function onUpload(e: FormEvent) {
     e.preventDefault();
@@ -45,7 +34,7 @@ export default function DocumentsPage() {
       setName('');
       setProjectId('');
       if (fileInputRef.current) fileInputRef.current.value = '';
-      await load();
+      mutate('/documents');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erreur');
     } finally {
@@ -78,7 +67,7 @@ export default function DocumentsPage() {
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           >
             <option value="">—</option>
-            {projects.map((p) => (
+            {projects?.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
@@ -95,6 +84,7 @@ export default function DocumentsPage() {
       </form>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {isLoading && <p className="text-sm text-slate-400">Chargement...</p>}
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">

@@ -8,7 +8,9 @@ import { StorageModule } from './core/storage/storage.module';
 import { TenancyModule } from './core/tenancy/tenancy.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CrmModule } from './modules/crm/crm.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { PlanningModule } from './modules/planning/planning.module';
 import { PortalModule } from './modules/portal/portal.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 
@@ -24,6 +26,8 @@ import { ProjectsModule } from './modules/projects/projects.module';
     DocumentsModule,
     BillingModule,
     PortalModule,
+    PlanningModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

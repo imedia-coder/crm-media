@@ -46,8 +46,10 @@ export interface Project {
   companyId: string | null;
   budget: string | null;
   managerId: string | null;
+  dueDate: string | null;
   company?: Company | null;
-  _count?: { tasks: number };
+  manager?: { id: string; firstName: string; lastName: string } | null;
+  tasks?: { status: TaskStatus }[];
 }
 
 export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
@@ -64,6 +66,35 @@ export interface Task {
   assigneeId: string | null;
   estimatedHours: string | null;
   dueDate: string | null;
+  project?: { id: string; name: string };
+}
+
+export interface Appointment {
+  id: string;
+  title: string;
+  description: string | null;
+  startAt: string;
+  endAt: string;
+  location: string | null;
+  projectId: string | null;
+  companyId: string | null;
+  project?: { id: string; name: string } | null;
+  company?: { id: string; name: string } | null;
+}
+
+export interface DashboardSummary {
+  stats: {
+    totalCompanies: number;
+    totalClients: number;
+    activeProjects: number;
+    openDealsCount: number;
+    openDealsValue: number;
+    unpaidInvoicesTotal: number;
+    overdueInvoicesCount: number;
+  };
+  upcomingAppointments: Appointment[];
+  upcomingTaskDeadlines: Task[];
+  upcomingProjectDeadlines: Project[];
 }
 
 export interface DocumentVersion {

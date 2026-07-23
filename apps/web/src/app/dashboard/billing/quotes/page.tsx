@@ -1,31 +1,20 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
+import { mutate } from 'swr';
 import { Badge } from '@/components/badge';
 import { LineItemsEditor } from '@/components/line-items-editor';
 import { api, ApiError } from '@/lib/api';
 import { downloadFile } from '@/lib/download';
 import { Company, LineItem, Quote } from '@/lib/types';
+import { useApi } from '@/lib/use-api';
 
 export default function QuotesPage() {
-  const [quotes, setQuotes] = useState<Quote[] | null>(null);
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const { data: quotes, isLoading } = useApi<Quote[]>('/billing/quotes');
+  const { data: companies } = useApi<Company[]>('/crm/companies');
   const [companyId, setCompanyId] = useState('');
   const [lines, setLines] = useState<LineItem[]>([{ description: '', quantity: 1, unitPrice: 0, vatRate: 20 }]);
   const [error, setError] = useState<string | null>(null);
-
-  async function load() {
-    const [quotesData, companiesData] = await Promise.all([
-      api.get<Quote[]>('/billing/quotes'),
-      api.get<Company[]>('/crm/companies'),
-    ]);
-    setQuotes(quotesData);
-    setCompanies(companiesData);
-  }
-
-  useEffect(() => {
-    load().catch((err) => setError(err instanceof ApiError ? err.message : 'Erreur de chargement'));
-  }, []);
 
   async function createQuote(e: FormEvent) {
     e.preventDefault();
@@ -34,7 +23,7 @@ export default function QuotesPage() {
       await api.post('/billing/quotes', { companyId, lines });
       setCompanyId('');
       setLines([{ description: '', quantity: 1, unitPrice: 0, vatRate: 20 }]);
-      await load();
+      mutate('/billing/quotes');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erreur');
     }
@@ -44,7 +33,7 @@ export default function QuotesPage() {
     setError(null);
     try {
       await api.post(`/billing/quotes/${id}/${action}`);
-      await load();
+      mutate('/billing/quotes');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erreur');
     }
@@ -64,7 +53,7 @@ export default function QuotesPage() {
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
           >
             <option value="">Sélectionner...</option>
-            {companies.map((c) => (
+            {companies?.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
@@ -78,6 +67,7 @@ export default function QuotesPage() {
       </form>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {isLoading && <p className="text-sm text-slate-400">Chargement...</p>}
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">

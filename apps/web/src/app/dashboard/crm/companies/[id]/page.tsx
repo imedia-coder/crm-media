@@ -1,14 +1,17 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
+import { mutate } from 'swr';
 import { Field } from '@/components/form-field';
 import { api, ApiError } from '@/lib/api';
 import { Company, Contact } from '@/lib/types';
+import { useApi } from '@/lib/use-api';
 
 export default function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [company, setCompany] = useState<(Company & { contacts: Contact[] }) | null>(null);
+  const key = `/crm/companies/${id}`;
+  const { data: company, error: loadError } = useApi<Company & { contacts: Contact[] }>(key);
   const [error, setError] = useState<string | null>(null);
 
   const [contactFirstName, setContactFirstName] = useState('');
@@ -19,15 +22,6 @@ export default function CompanyDetailPage() {
   const [inviteFirstName, setInviteFirstName] = useState('');
   const [inviteLastName, setInviteLastName] = useState('');
   const [inviteResult, setInviteResult] = useState<{ email: string; temporaryPassword: string } | null>(null);
-
-  async function load() {
-    const data = await api.get<Company & { contacts: Contact[] }>(`/crm/companies/${id}`);
-    setCompany(data);
-  }
-
-  useEffect(() => {
-    load().catch((err) => setError(err instanceof ApiError ? err.message : 'Erreur de chargement'));
-  }, [id]);
 
   async function addContact(e: FormEvent) {
     e.preventDefault();
@@ -42,7 +36,7 @@ export default function CompanyDetailPage() {
       setContactFirstName('');
       setContactLastName('');
       setContactEmail('');
-      await load();
+      mutate(key);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erreur');
     }
@@ -66,6 +60,7 @@ export default function CompanyDetailPage() {
     }
   }
 
+  if (loadError) return <p className="text-sm text-red-600">Impossible de charger cette entreprise.</p>;
   if (!company) return <p className="text-sm text-slate-500">Chargement...</p>;
 
   return (

@@ -1,34 +1,21 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
+import { mutate } from 'swr';
 import { Field } from '@/components/form-field';
 import { api, ApiError } from '@/lib/api';
 import { Company, Deal, PipelineStage } from '@/lib/types';
+import { useApi } from '@/lib/use-api';
 
 export default function DealsPage() {
-  const [stages, setStages] = useState<PipelineStage[]>([]);
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const { data: stages, isLoading: stagesLoading } = useApi<PipelineStage[]>('/crm/pipeline-stages');
+  const { data: deals, isLoading: dealsLoading } = useApi<Deal[]>('/crm/deals');
+  const { data: companies } = useApi<Company[]>('/crm/companies');
   const [error, setError] = useState<string | null>(null);
 
   const [title, setTitle] = useState('');
   const [companyId, setCompanyId] = useState('');
   const [estimatedValue, setEstimatedValue] = useState('');
-
-  async function load() {
-    const [stagesData, dealsData, companiesData] = await Promise.all([
-      api.get<PipelineStage[]>('/crm/pipeline-stages'),
-      api.get<Deal[]>('/crm/deals'),
-      api.get<Company[]>('/crm/companies'),
-    ]);
-    setStages(stagesData);
-    setDeals(dealsData);
-    setCompanies(companiesData);
-  }
-
-  useEffect(() => {
-    load().catch((err) => setError(err instanceof ApiError ? err.message : 'Erreur de chargement'));
-  }, []);
 
   async function createDeal(e: FormEvent) {
     e.preventDefault();
@@ -42,7 +29,7 @@ export default function DealsPage() {
       setTitle('');
       setCompanyId('');
       setEstimatedValue('');
-      await load();
+      mutate('/crm/deals');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erreur');
     }
@@ -52,7 +39,7 @@ export default function DealsPage() {
     setError(null);
     try {
       await api.post(`/crm/deals/${dealId}/move`, { stageId });
-      await load();
+      mutate('/crm/deals');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erreur');
     }
@@ -74,7 +61,7 @@ export default function DealsPage() {
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           >
             <option value="">—</option>
-            {companies.map((c) => (
+            {companies?.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>
@@ -88,14 +75,15 @@ export default function DealsPage() {
       </form>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {(stagesLoading || dealsLoading) && <p className="text-sm text-slate-400">Chargement...</p>}
 
       <div className="flex gap-4 overflow-x-auto pb-4">
-        {stages.map((stage) => (
+        {stages?.map((stage) => (
           <div key={stage.id} className="w-64 shrink-0 rounded-lg bg-slate-100 p-3">
             <p className="mb-3 text-sm font-semibold text-slate-700">{stage.name}</p>
             <div className="space-y-2">
               {deals
-                .filter((d) => d.stageId === stage.id)
+                ?.filter((d) => d.stageId === stage.id)
                 .map((deal) => (
                   <div key={deal.id} className="rounded-md border border-slate-200 bg-white p-3 text-sm shadow-sm">
                     <p className="font-medium text-slate-900">{deal.title}</p>

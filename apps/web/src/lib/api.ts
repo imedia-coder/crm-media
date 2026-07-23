@@ -43,7 +43,25 @@ export function decodeJwt<T>(token: string): T | null {
   }
 }
 
-async function refreshAccessToken(): Promise<string | null> {
+// Several requests can hit a 401 at the same moment (e.g. the dashboard
+// firing multiple SWR fetches when the access token has just expired).
+// Without this, each one would independently call /auth/refresh; the
+// first rotates the refresh token server-side, so the second arrives
+// with an already-revoked token, fails, and wipes out the valid tokens
+// the first call just stored. Sharing one in-flight promise means every
+// concurrent 401 waits on the same, single refresh attempt.
+let refreshPromise: Promise<string | null> | null = null;
+
+function refreshAccessToken(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = doRefresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+async function doRefresh(): Promise<string | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;
 

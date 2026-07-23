@@ -49,6 +49,13 @@ export class TenantPrismaService {
    * — each one is already its own transaction underneath, so nesting them
    * that way does not compose. Use `transaction()` below for multi-step
    * atomic writes instead.
+   *
+   * Also never `Promise.all([...])` (or otherwise fire concurrently) two or
+   * more calls made through `.client` or `.transaction()` — they all share
+   * the same underlying connection for their duration, and the pg driver
+   * rejects a second query issued before the first resolves ("Calling
+   * client.query() when the client is already executing a query"), which
+   * manifests as the request hanging. Always `await` them one at a time.
    */
   get client() {
     const tenantId = this.requireTenantId();

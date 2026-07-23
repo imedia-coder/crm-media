@@ -12,13 +12,13 @@ export class PortalService {
   ) {}
 
   async getMe(userId: string, companyId: string) {
-    const [user, company] = await Promise.all([
-      this.tenantPrisma.client.user.findUniqueOrThrow({
-        where: { id: userId },
-        select: { id: true, email: true, firstName: true, lastName: true },
-      }),
-      this.tenantPrisma.client.company.findUniqueOrThrow({ where: { id: companyId } }),
-    ]);
+    // Sequential, not Promise.all — see TenantPrismaService for why
+    // concurrent calls through `.client` can't share the same connection.
+    const user = await this.tenantPrisma.client.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+    const company = await this.tenantPrisma.client.company.findUniqueOrThrow({ where: { id: companyId } });
     return { user, company };
   }
 

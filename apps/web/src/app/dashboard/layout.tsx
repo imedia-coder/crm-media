@@ -8,7 +8,10 @@ import { useAuth } from '@/lib/auth-context';
 const NAV_SECTIONS = [
   {
     title: 'Général',
-    links: [{ href: '/dashboard', label: 'Tableau de bord' }],
+    links: [
+      { href: '/dashboard', label: 'Tableau de bord' },
+      { href: '/dashboard/planning', label: 'Planning' },
+    ],
   },
   {
     title: 'CRM',

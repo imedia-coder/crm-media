@@ -1,34 +1,28 @@
 'use client';
 
-import { Fragment, FormEvent, useEffect, useState } from 'react';
+import { Fragment, FormEvent, useState } from 'react';
+import { mutate } from 'swr';
 import { Badge } from '@/components/badge';
 import { api, ApiError } from '@/lib/api';
 import { downloadFile } from '@/lib/download';
 import { Invoice, Quote } from '@/lib/types';
+import { useApi } from '@/lib/use-api';
 
 const PAYMENT_METHODS = ['BANK_TRANSFER', 'CARD', 'STRIPE', 'PAYPAL', 'OTHER'];
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<Invoice[] | null>(null);
-  const [acceptedQuotes, setAcceptedQuotes] = useState<Quote[]>([]);
+  const { data: invoices, isLoading } = useApi<Invoice[]>('/billing/invoices');
+  const { data: acceptedQuotes } = useApi<Quote[]>('/billing/quotes?status=ACCEPTED');
   const [selectedQuoteId, setSelectedQuoteId] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [paymentFormFor, setPaymentFormFor] = useState<string | null>(null);
+  const [partialFormFor, setPartialFormFor] = useState<string | null>(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
 
-  async function load() {
-    const [invoicesData, quotesData] = await Promise.all([
-      api.get<Invoice[]>('/billing/invoices'),
-      api.get<Quote[]>('/billing/quotes?status=ACCEPTED'),
-    ]);
-    setInvoices(invoicesData);
-    setAcceptedQuotes(quotesData);
+  function refresh() {
+    mutate('/billing/invoices');
+    mutate('/dashboard/summary');
   }
-
-  useEffect(() => {
-    load().catch((err) => setError(err instanceof ApiError ? err.message : 'Erreur de chargement'));
-  }, []);
 
   async function createFromQuote(e: FormEvent) {
     e.preventDefault();
@@ -36,7 +30,7 @@ export default function InvoicesPage() {
     try {
       await api.post(`/billing/invoices/from-quote/${selectedQuoteId}`);
       setSelectedQuoteId('');
-      await load();
+      refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erreur');
     }
@@ -46,13 +40,23 @@ export default function InvoicesPage() {
     setError(null);
     try {
       await api.post(`/billing/invoices/${id}/send`);
-      await load();
+      refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erreur');
     }
   }
 
-  async function recordPayment(e: FormEvent, invoiceId: string) {
+  async function markPaid(id: string) {
+    setError(null);
+    try {
+      await api.post(`/billing/invoices/${id}/mark-paid`, {});
+      refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erreur');
+    }
+  }
+
+  async function recordPartialPayment(e: FormEvent, invoiceId: string) {
     e.preventDefault();
     setError(null);
     try {
@@ -60,9 +64,9 @@ export default function InvoicesPage() {
         amount: Number(paymentAmount),
         method: paymentMethod,
       });
-      setPaymentFormFor(null);
+      setPartialFormFor(null);
       setPaymentAmount('');
-      await load();
+      refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Erreur');
     }
@@ -82,7 +86,7 @@ export default function InvoicesPage() {
             className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
           >
             <option value="">Sélectionner un devis...</option>
-            {acceptedQuotes.map((q) => (
+            {acceptedQuotes?.map((q) => (
               <option key={q.id} value={q.id}>
                 {q.number} — {q.company?.name}
               </option>
@@ -99,6 +103,7 @@ export default function InvoicesPage() {
       </form>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {isLoading && <p className="text-sm text-slate-400">Chargement...</p>}
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
         <table className="w-full text-sm">
@@ -134,12 +139,17 @@ export default function InvoicesPage() {
                       </button>
                     )}
                     {(invoice.status === 'SENT' || invoice.status === 'OVERDUE') && (
-                      <button
-                        onClick={() => setPaymentFormFor(paymentFormFor === invoice.id ? null : invoice.id)}
-                        className="text-sm text-green-700 underline"
-                      >
-                        Paiement
-                      </button>
+                      <>
+                        <button onClick={() => markPaid(invoice.id)} className="text-sm font-medium text-green-700 underline">
+                          Client a payé
+                        </button>
+                        <button
+                          onClick={() => setPartialFormFor(partialFormFor === invoice.id ? null : invoice.id)}
+                          className="text-sm text-slate-500 underline"
+                        >
+                          Paiement partiel
+                        </button>
+                      </>
                     )}
                     <button
                       onClick={() => downloadFile(`/billing/invoices/${invoice.id}/pdf`, `${invoice.number}.pdf`)}
@@ -149,10 +159,10 @@ export default function InvoicesPage() {
                     </button>
                   </td>
                 </tr>
-                {paymentFormFor === invoice.id && (
+                {partialFormFor === invoice.id && (
                   <tr>
                     <td colSpan={6} className="bg-slate-50 px-4 py-3">
-                      <form onSubmit={(e) => recordPayment(e, invoice.id)} className="flex items-end gap-3">
+                      <form onSubmit={(e) => recordPartialPayment(e, invoice.id)} className="flex items-end gap-3">
                         <label className="block">
                           <span className="mb-1 block text-xs font-medium text-slate-700">Montant</span>
                           <input

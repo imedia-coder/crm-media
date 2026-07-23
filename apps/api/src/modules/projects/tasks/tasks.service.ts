@@ -85,11 +85,12 @@ export class TasksService {
     if (id === dto.dependsOnTaskId) {
       throw new BadRequestException('A task cannot depend on itself');
     }
+    // Sequential, not Promise.all: each call to `.client` reserves its own
+    // connection for the query's duration, and firing two concurrently
+    // against the same underlying connection makes the driver choke.
     const client = this.tenantPrisma.client;
-    const [task, dependsOn] = await Promise.all([
-      client.task.findUnique({ where: { id } }),
-      client.task.findUnique({ where: { id: dto.dependsOnTaskId } }),
-    ]);
+    const task = await client.task.findUnique({ where: { id } });
+    const dependsOn = await client.task.findUnique({ where: { id: dto.dependsOnTaskId } });
     if (!task) throw new NotFoundException('Task not found');
     if (!dependsOn) throw new NotFoundException('Dependency task not found');
     if (task.projectId !== dependsOn.projectId) {

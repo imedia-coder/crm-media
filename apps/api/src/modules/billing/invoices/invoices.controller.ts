@@ -4,7 +4,8 @@ import { RequirePermissions } from '../../../core/auth/decorators/permissions.de
 import { BILLING_PERMISSIONS } from '../../../core/auth/permissions.constants';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { ListInvoicesQuery } from './dto/list-invoices.query';
-import { RecordPaymentDto } from './dto/record-payment.dto';
+import { MarkPaidDto } from './dto/mark-paid.dto';
+import { PaymentMethodDto, RecordPaymentDto } from './dto/record-payment.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InvoicesService } from './invoices.service';
 
@@ -60,6 +61,12 @@ export class InvoicesController {
   @Post(':id/payments')
   recordPayment(@Param('id') id: string, @Body() dto: RecordPaymentDto) {
     return this.invoicesService.recordPayment(id, dto);
+  }
+
+  @RequirePermissions(BILLING_PERMISSIONS.INVOICES_WRITE)
+  @Post(':id/mark-paid')
+  markAsPaid(@Param('id') id: string, @Body() dto: MarkPaidDto) {
+    return this.invoicesService.markAsPaid(id, dto.method ?? PaymentMethodDto.OTHER);
   }
 
   @RequirePermissions(BILLING_PERMISSIONS.INVOICES_WRITE)
