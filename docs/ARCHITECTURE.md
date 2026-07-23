@@ -42,6 +42,7 @@ Points clés :
 - Table `tenants` (agences) comme racine ; toute table métier porte une colonne `tenant_id` non nullable, indexée.
 - Policy RLS type : `USING (tenant_id = current_setting('app.tenant_id')::uuid)`, positionnée à chaque connexion/requête via middleware Nest.
 - Un tenant "super admin" (l'éditeur de la plateforme) a une vue cross-tenant pour le support et le monitoring, via un rôle DB séparé qui bypass RLS de manière auditée.
+- **Deux rôles Postgres en pratique** : un rôle "owner" (bypass RLS) réservé aux migrations et à la création d'un tenant (la ligne `RETURNING` d'un `INSERT` est elle-même filtrée par les policies `SELECT`, donc créer le tout premier enregistrement d'un tenant est structurellement impossible sous RLS classique) ; un rôle "runtime" sans `BYPASSRLS` utilisé par l'application pour toutes les requêtes scopées à un tenant. Sur les fournisseurs managés (Neon, Supabase...), le rôle par défaut a souvent `BYPASSRLS` — il faut créer explicitement le rôle applicatif restreint.
 - Objets binaires (S3) préfixés par `tenant_id` dans le chemin, avec policy d'accès dédiée.
 - Le module "Marketplace" et les futurs connecteurs externes stockent leurs credentials chiffrés par tenant (voir §7 Sécurité).
 

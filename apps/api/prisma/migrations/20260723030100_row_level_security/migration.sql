@@ -22,8 +22,18 @@ BEGIN
 END $$;
 
 -- The "tenants" table itself is keyed by id, not tenantId.
-CREATE POLICY tenant_isolation ON "tenants"
-  USING (id = current_setting('app.tenant_id', true)::uuid);
+-- ids are Prisma-generated uuid() strings stored as TEXT, so compare as text.
+-- Creating a tenant (signup) happens before any tenant context exists, so
+-- INSERT is allowed unconditionally; reads/writes to an existing tenant row
+-- stay scoped to the current tenant context.
+CREATE POLICY tenant_isolation_read ON "tenants"
+  FOR SELECT USING (id = current_setting('app.tenant_id', true));
+CREATE POLICY tenant_isolation_write ON "tenants"
+  FOR UPDATE USING (id = current_setting('app.tenant_id', true));
+CREATE POLICY tenant_isolation_delete ON "tenants"
+  FOR DELETE USING (id = current_setting('app.tenant_id', true));
+CREATE POLICY tenant_isolation_insert ON "tenants"
+  FOR INSERT WITH CHECK (true);
 
 DO $$
 DECLARE
@@ -35,7 +45,7 @@ BEGIN
   ]
   LOOP
     EXECUTE format(
-      'CREATE POLICY tenant_isolation ON %I USING ("tenantId" = current_setting(''app.tenant_id'', true)::uuid)',
+      'CREATE POLICY tenant_isolation ON %I USING ("tenantId" = current_setting(''app.tenant_id'', true))',
       t
     );
   END LOOP;
