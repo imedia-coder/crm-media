@@ -1,4 +1,5 @@
 import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { DEFAULT_PIPELINE_STAGES } from '../../modules/crm/pipeline-stages/default-stages';
 import { PlatformPrismaService } from '../prisma/platform-prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -77,6 +78,9 @@ export class AuthService {
             roleId: role.id,
           },
           include: { role: { include: { permissions: true } } },
+        });
+        await tx.pipelineStage.createMany({
+          data: DEFAULT_PIPELINE_STAGES.map((stage) => ({ ...stage, tenantId: tenant.id })),
         });
         return { tenant, user };
       })

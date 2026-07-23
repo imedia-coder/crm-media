@@ -53,7 +53,7 @@ model User {
   mfaEnabledAt DateTime?
   isClient     Boolean    @default(false)
   roleId       String?
-  role         Role?      @relation(fields: [roleId], references: [id])
+  role         Role?      @relation(fields: [roleId], references: [id], onDelete: SetNull)
   refreshTokens RefreshToken[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -177,7 +177,7 @@ model Deal {
   contactId           String?
   contact             Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
   stageId             String
-  stage               PipelineStage @relation(fields: [stageId], references: [id])
+  stage               PipelineStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
   ownerId             String?
   owner               User?         @relation("DealOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   estimatedValue      Decimal?      @db.Decimal(14, 2)
@@ -201,7 +201,7 @@ model DealStageHistory {
   dealId    String
   deal      Deal          @relation(fields: [dealId], references: [id], onDelete: Cascade)
   stageId   String
-  stage     PipelineStage @relation(fields: [stageId], references: [id])
+  stage     PipelineStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
   enteredAt DateTime      @default(now())
 
   @@index([dealId])
@@ -363,7 +363,7 @@ model Quote {
   tenantId  String
   tenant    Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   companyId String
-  company   Company     @relation(fields: [companyId], references: [id])
+  company   Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   dealId    String?
   deal      Deal?       @relation(fields: [dealId], references: [id], onDelete: SetNull)
   projectId String?
@@ -407,7 +407,7 @@ model Invoice {
   tenantId  String
   tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   companyId String
-  company   Company       @relation(fields: [companyId], references: [id])
+  company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   quoteId   String?
   quote     Quote?        @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   projectId String?
