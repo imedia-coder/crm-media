@@ -122,6 +122,12 @@ export class TasksService {
   }
 
   async removeDependency(id: string, dependsOnTaskId: string) {
+    // taskDependency has no tenantId of its own (protected transitively via
+    // its parent task), so this existence check via the RLS-protected
+    // `task` table is what actually stops a cross-tenant delete here —
+    // without it, deleteMany() below would happily remove another
+    // tenant's row if you guessed/knew its task id.
+    await this.findOneOrThrow(id);
     await this.tenantPrisma.client.taskDependency.deleteMany({
       where: { taskId: id, dependsOnTaskId },
     });

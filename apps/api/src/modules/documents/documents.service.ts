@@ -85,6 +85,12 @@ export class DocumentsService {
   }
 
   async getVersionOrThrow(documentId: string, versionNumber: number) {
+    // documentVersion has no tenantId of its own (protected transitively
+    // via its parent document), so looking it up by documentId+versionNumber
+    // directly would return another tenant's file if you knew/guessed its
+    // documentId — confirming the parent exists first is what actually
+    // enforces tenant isolation here, via the RLS-protected `document` table.
+    await this.findOneOrThrow(documentId);
     const version = await this.tenantPrisma.client.documentVersion.findUnique({
       where: { documentId_versionNumber: { documentId, versionNumber } },
     });
