@@ -6,6 +6,7 @@ export interface Company {
   isClient: boolean;
   clientSince: string | null;
   notes: string | null;
+  anonymizedAt: string | null;
   createdAt: string;
 }
 

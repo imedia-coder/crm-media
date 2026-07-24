@@ -46,4 +46,16 @@ export class CompaniesController {
   inviteClient(@Param('id') id: string, @Body() dto: InviteClientDto) {
     return this.companiesService.inviteClient(id, dto);
   }
+
+  @RequirePermissions(CRM_PERMISSIONS.COMPANIES_READ)
+  @Get(':id/export')
+  exportPersonalData(@Param('id') id: string) {
+    return this.companiesService.exportPersonalData(id);
+  }
+
+  @RequirePermissions(CRM_PERMISSIONS.COMPANIES_WRITE)
+  @Post(':id/anonymize')
+  anonymize(@Param('id') id: string) {
+    return this.companiesService.anonymize(id);
+  }
 }

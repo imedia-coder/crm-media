@@ -130,6 +130,12 @@ model Company {
   isClient         Boolean   @default(false)
   clientSince      DateTime?
   notes            String?
+
+  // RGPD : droit à l'effacement. Bloqué tant que des devis/factures existent
+  // (obligation légale de conservation des documents comptables), voir
+  // CompaniesService.anonymize.
+  anonymizedAt     DateTime?
+
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

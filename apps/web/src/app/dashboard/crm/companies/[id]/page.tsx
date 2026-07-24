@@ -50,6 +50,7 @@ export default function CompanyDetailPage() {
   const [inviteResult, setInviteResult] = useState<{ email: string; temporaryPassword: string } | null>(null);
 
   const [busyContactId, setBusyContactId] = useState<string | null>(null);
+  const [companyActionBusy, setCompanyActionBusy] = useState(false);
 
   async function addContact(e: FormEvent) {
     e.preventDefault();
@@ -103,6 +104,39 @@ export default function CompanyDetailPage() {
     }
   }
 
+  async function exportCompany() {
+    setError(null);
+    setCompanyActionBusy(true);
+    try {
+      const data = await api.get(`/crm/companies/${id}/export`);
+      downloadJson(`donnees-personnelles-${company?.name ?? id}.json`, data);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erreur');
+    } finally {
+      setCompanyActionBusy(false);
+    }
+  }
+
+  async function anonymizeCompany() {
+    if (
+      !window.confirm(
+        "Anonymiser cette entreprise ? Cette action est irréversible : son nom, ses notes et les données identifiantes de ses contacts seront définitivement effacés. Impossible si des devis ou factures existent.",
+      )
+    ) {
+      return;
+    }
+    setError(null);
+    setCompanyActionBusy(true);
+    try {
+      await api.post(`/crm/companies/${id}/anonymize`, {});
+      mutate(key);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erreur');
+    } finally {
+      setCompanyActionBusy(false);
+    }
+  }
+
   async function inviteClient(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -126,9 +160,34 @@ export default function CompanyDetailPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-xl font-semibold">{company.name}</h1>
-        <p className="text-sm text-slate-500">{company.isClient ? 'Client' : 'Prospect'}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold">{company.name}</h1>
+            {company.anonymizedAt && (
+              <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-600">Anonymisé (RGPD)</span>
+            )}
+          </div>
+          <p className="text-sm text-slate-500">{company.isClient ? 'Client' : 'Prospect'}</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={exportCompany}
+            disabled={companyActionBusy}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            Exporter les données (RGPD)
+          </button>
+          {!company.anonymizedAt && (
+            <button
+              onClick={anonymizeCompany}
+              disabled={companyActionBusy}
+              className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+            >
+              Anonymiser (RGPD)
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -142,12 +201,13 @@ export default function CompanyDetailPage() {
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={4}
+          disabled={!!company.anonymizedAt}
           placeholder="Historique des échanges, contexte, points d'attention..."
-          className="mb-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="mb-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
         />
         <button
           onClick={saveNotes}
-          disabled={savingNotes || notes === (company.notes ?? '')}
+          disabled={savingNotes || notes === (company.notes ?? '') || !!company.anonymizedAt}
           className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
         >
           {savingNotes ? 'Enregistrement...' : 'Enregistrer les notes'}
