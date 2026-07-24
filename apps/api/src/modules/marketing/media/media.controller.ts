@@ -52,7 +52,7 @@ export class MediaController {
       'Content-Type': asset.mimeType,
       'Content-Disposition': `inline; filename="${encodeURIComponent(asset.name)}"`,
     });
-    return new StreamableFile(this.mediaService.readStream(asset.storageKey));
+    return new StreamableFile(await this.mediaService.readStream(asset.storageKey));
   }
 
   @RequirePermissions(MARKETING_PERMISSIONS.MEDIA_WRITE)

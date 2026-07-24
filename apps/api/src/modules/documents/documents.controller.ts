@@ -74,7 +74,7 @@ export class DocumentsController {
       'Content-Type': version.mimeType,
       'Content-Disposition': `attachment; filename="${encodeURIComponent(version.originalName)}"`,
     });
-    return new StreamableFile(this.documentsService.readStream(version.storageKey));
+    return new StreamableFile(await this.documentsService.readStream(version.storageKey));
   }
 
   @RequirePermissions(DOCUMENT_PERMISSIONS.DOCUMENTS_WRITE)

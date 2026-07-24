@@ -54,7 +54,7 @@ export class PortalController {
       'Content-Type': version.mimeType,
       'Content-Disposition': `attachment; filename="${encodeURIComponent(version.originalName)}"`,
     });
-    return new StreamableFile(this.portalService.readStream(version.storageKey));
+    return new StreamableFile(await this.portalService.readStream(version.storageKey));
   }
 
   @Get('quotes')
