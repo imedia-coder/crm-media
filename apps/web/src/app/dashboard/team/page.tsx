@@ -13,11 +13,33 @@ const STATUS_LABELS: Record<string, string> = {
   DISABLED: 'Désactivé',
 };
 
+interface PurgeResult {
+  purgedAt: string;
+  staleRefreshTokensDeleted: number;
+  readNotificationsDeleted: number;
+}
+
 export default function TeamPage() {
   const key = '/users';
   const { data: members, error: loadError } = useApi<TeamMember[]>(key);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [purging, setPurging] = useState(false);
+  const [purgeResult, setPurgeResult] = useState<PurgeResult | null>(null);
+
+  async function runPurge() {
+    setError(null);
+    setPurging(true);
+    setPurgeResult(null);
+    try {
+      const result = await api.post<PurgeResult>('/admin/retention/purge', {});
+      setPurgeResult(result);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erreur');
+    } finally {
+      setPurging(false);
+    }
+  }
 
   async function exportMember(member: TeamMember) {
     setError(null);
@@ -123,6 +145,28 @@ export default function TeamPage() {
             )}
           </tbody>
         </table>
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 className="mb-1 text-sm font-semibold text-slate-900">Politique de rétention des données (RGPD)</h2>
+        <p className="mb-3 text-sm text-slate-500">
+          Une purge automatique s&apos;exécute chaque nuit : jetons de connexion expirés depuis plus de 30 jours et
+          notifications lues depuis plus de 180 jours sont définitivement supprimés. Vous pouvez aussi la lancer
+          maintenant.
+        </p>
+        <button
+          onClick={runPurge}
+          disabled={purging}
+          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+        >
+          {purging ? 'Purge en cours...' : 'Lancer la purge maintenant'}
+        </button>
+        {purgeResult && (
+          <p className="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-800">
+            Purge effectuée : {purgeResult.staleRefreshTokensDeleted} jeton(s) et{' '}
+            {purgeResult.readNotificationsDeleted} notification(s) supprimés.
+          </p>
+        )}
       </section>
     </div>
   );

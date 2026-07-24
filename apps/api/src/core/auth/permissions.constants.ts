@@ -41,6 +41,10 @@ export const USER_PERMISSIONS = {
   USERS_WRITE: 'admin.users.write',
 } as const;
 
+export const ADMIN_PERMISSIONS = {
+  RETENTION_RUN: 'admin.retention.run',
+} as const;
+
 export const MARKETING_PERMISSIONS = {
   CONTENT_READ: 'marketing.content.read',
   CONTENT_WRITE: 'marketing.content.write',
