@@ -157,6 +157,14 @@ model Contact {
   lastName  String
   email     String?
   phone     String?
+
+  // RGPD : consentement au traitement des données (ex. prospection),
+  // avec preuve (date + source) plutôt qu'un simple booléen.
+  marketingConsent  Boolean   @default(false)
+  consentGivenAt    DateTime?
+  consentSource     String?
+  anonymizedAt      DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -39,4 +39,16 @@ export class ContactsController {
   remove(@Param('id') id: string) {
     return this.contactsService.remove(id);
   }
+
+  @RequirePermissions(CRM_PERMISSIONS.CONTACTS_READ)
+  @Get(':id/export')
+  exportPersonalData(@Param('id') id: string) {
+    return this.contactsService.exportPersonalData(id);
+  }
+
+  @RequirePermissions(CRM_PERMISSIONS.CONTACTS_WRITE)
+  @Post(':id/anonymize')
+  anonymize(@Param('id') id: string) {
+    return this.contactsService.anonymize(id);
+  }
 }

@@ -16,6 +16,10 @@ export interface Contact {
   lastName: string;
   email: string | null;
   phone: string | null;
+  marketingConsent: boolean;
+  consentGivenAt: string | null;
+  consentSource: string | null;
+  anonymizedAt: string | null;
 }
 
 export interface PipelineStage {
