@@ -1,5 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { PasswordService } from '../../core/auth/password.service';
 import { TenantPrismaService } from '../../core/tenancy/tenant-prisma.service';
+import { InviteUserDto } from './dto/invite-user.dto';
 
 const SAFE_SELECT = {
   id: true,
@@ -16,7 +18,10 @@ const SAFE_SELECT = {
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly tenantPrisma: TenantPrismaService) {}
+  constructor(
+    private readonly tenantPrisma: TenantPrismaService,
+    private readonly passwordService: PasswordService,
+  ) {}
 
   findAll() {
     return this.tenantPrisma.client.user.findMany({
@@ -24,6 +29,45 @@ export class UsersService {
       select: SAFE_SELECT,
       orderBy: { createdAt: 'asc' },
     });
+  }
+
+  findRoles() {
+    return this.tenantPrisma.client.role.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async invite(dto: InviteUserDto) {
+    if (dto.roleId) {
+      const role = await this.tenantPrisma.client.role.findUnique({ where: { id: dto.roleId } });
+      if (!role) throw new NotFoundException('Role not found');
+    }
+
+    const temporaryPassword = this.passwordService.generateTemporaryPassword();
+    const passwordHash = await this.passwordService.hash(temporaryPassword);
+
+    const user = await this.tenantPrisma.client.user
+      .create({
+        data: {
+          tenantId: this.tenantPrisma.tenantId,
+          email: dto.email,
+          passwordHash,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          status: 'ACTIVE',
+          roleId: dto.roleId,
+        },
+        select: SAFE_SELECT,
+      })
+      .catch((error) => {
+        if (error?.code === 'P2002') {
+          throw new ConflictException('A user with this email already exists for this tenant');
+        }
+        throw error;
+      });
+
+    return { user, temporaryPassword };
   }
 
   async findOneOrThrow(id: string) {

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { mutate } from 'swr';
+import { Field } from '@/components/form-field';
 import { api, ApiError } from '@/lib/api';
 import { downloadJson } from '@/lib/download';
-import { TeamMember } from '@/lib/types';
+import { Role, TeamMember } from '@/lib/types';
 import { useApi } from '@/lib/use-api';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -22,10 +23,43 @@ interface PurgeResult {
 export default function TeamPage() {
   const key = '/users';
   const { data: members, error: loadError } = useApi<TeamMember[]>(key);
+  const { data: roles } = useApi<Role[]>('/users/roles');
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [purging, setPurging] = useState(false);
   const [purgeResult, setPurgeResult] = useState<PurgeResult | null>(null);
+
+  const [inviteFirstName, setInviteFirstName] = useState('');
+  const [inviteLastName, setInviteLastName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRoleId, setInviteRoleId] = useState('');
+  const [inviteResult, setInviteResult] = useState<{ email: string; temporaryPassword: string } | null>(null);
+  const [inviting, setInviting] = useState(false);
+
+  async function inviteMember(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setInviteResult(null);
+    setInviting(true);
+    try {
+      const result = await api.post<{ user: { email: string }; temporaryPassword: string }>('/users/invite', {
+        firstName: inviteFirstName,
+        lastName: inviteLastName,
+        email: inviteEmail,
+        roleId: inviteRoleId || undefined,
+      });
+      setInviteResult({ email: result.user.email, temporaryPassword: result.temporaryPassword });
+      setInviteFirstName('');
+      setInviteLastName('');
+      setInviteEmail('');
+      setInviteRoleId('');
+      mutate(key);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erreur');
+    } finally {
+      setInviting(false);
+    }
+  }
 
   async function runPurge() {
     setError(null);
@@ -145,6 +179,43 @@ export default function TeamPage() {
             )}
           </tbody>
         </table>
+      </section>
+
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 className="mb-3 text-sm font-semibold text-slate-900">Inviter un collaborateur</h2>
+        <form onSubmit={inviteMember} className="flex flex-wrap items-end gap-3">
+          <Field label="Prénom" value={inviteFirstName} onChange={setInviteFirstName} />
+          <Field label="Nom" value={inviteLastName} onChange={setInviteLastName} />
+          <Field label="Email" type="email" value={inviteEmail} onChange={setInviteEmail} />
+          <label className="block">
+            <span className="mb-1 block text-sm font-medium text-slate-700">Rôle</span>
+            <select
+              value={inviteRoleId}
+              onChange={(e) => setInviteRoleId(e.target.value)}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            >
+              <option value="">Aucun</option>
+              {roles?.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="submit"
+            disabled={inviting}
+            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          >
+            {inviting ? 'Envoi...' : 'Inviter'}
+          </button>
+        </form>
+        {inviteResult && (
+          <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+            Compte créé pour {inviteResult.email}. Mot de passe temporaire à transmettre :{' '}
+            <code className="font-mono">{inviteResult.temporaryPassword}</code>
+          </p>
+        )}
       </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">

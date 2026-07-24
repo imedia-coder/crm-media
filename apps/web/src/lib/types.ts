@@ -260,6 +260,11 @@ export interface TeamMember {
   createdAt: string;
 }
 
+export interface Role {
+  id: string;
+  name: string;
+}
+
 export interface Notification {
   id: string;
   type: NotificationType;
