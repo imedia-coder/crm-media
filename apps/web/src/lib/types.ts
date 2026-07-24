@@ -246,6 +246,20 @@ export interface ProjectProfitability {
   paidTotal: number;
 }
 
+export type UserStatus = 'ACTIVE' | 'INVITED' | 'DISABLED';
+
+export interface TeamMember {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  status: UserStatus;
+  mfaEnabledAt: string | null;
+  anonymizedAt: string | null;
+  role: { id: string; name: string } | null;
+  createdAt: string;
+}
+
 export interface Notification {
   id: string;
   type: NotificationType;

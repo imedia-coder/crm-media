@@ -44,6 +44,10 @@ const NAV_SECTIONS = [
       { href: '/dashboard/reporting', label: 'Reporting' },
     ],
   },
+  {
+    title: 'Administration',
+    links: [{ href: '/dashboard/team', label: 'Équipe' }],
+  },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {

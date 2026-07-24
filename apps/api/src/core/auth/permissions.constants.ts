@@ -36,6 +36,11 @@ export const DASHBOARD_PERMISSIONS = {
   VIEW: 'dashboard.view',
 } as const;
 
+export const USER_PERMISSIONS = {
+  USERS_READ: 'admin.users.read',
+  USERS_WRITE: 'admin.users.write',
+} as const;
+
 export const MARKETING_PERMISSIONS = {
   CONTENT_READ: 'marketing.content.read',
   CONTENT_WRITE: 'marketing.content.write',
