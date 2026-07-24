@@ -129,6 +129,7 @@ model Company {
   estimatedRevenue Decimal?  @db.Decimal(14, 2)
   isClient         Boolean   @default(false)
   clientSince      DateTime?
+  notes            String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

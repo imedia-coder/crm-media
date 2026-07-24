@@ -5,6 +5,7 @@ export interface Company {
   estimatedRevenue: string | null;
   isClient: boolean;
   clientSince: string | null;
+  notes: string | null;
   createdAt: string;
 }
 

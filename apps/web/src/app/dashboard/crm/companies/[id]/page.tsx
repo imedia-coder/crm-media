@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { mutate } from 'swr';
 import { Field } from '@/components/form-field';
 import { api, ApiError } from '@/lib/api';
@@ -13,6 +13,29 @@ export default function CompanyDetailPage() {
   const key = `/crm/companies/${id}`;
   const { data: company, error: loadError } = useApi<Company & { contacts: Contact[] }>(key);
   const [error, setError] = useState<string | null>(null);
+
+  const [notes, setNotes] = useState('');
+  const [notesSaved, setNotesSaved] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
+
+  useEffect(() => {
+    if (company) setNotes(company.notes ?? '');
+  }, [company]);
+
+  async function saveNotes() {
+    setError(null);
+    setSavingNotes(true);
+    try {
+      await api.patch(`/crm/companies/${id}`, { notes });
+      mutate(key);
+      setNotesSaved(true);
+      setTimeout(() => setNotesSaved(false), 2000);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Erreur');
+    } finally {
+      setSavingNotes(false);
+    }
+  }
 
   const [contactFirstName, setContactFirstName] = useState('');
   const [contactLastName, setContactLastName] = useState('');
@@ -71,6 +94,27 @@ export default function CompanyDetailPage() {
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-900">Notes</h2>
+          {notesSaved && <span className="text-xs text-green-600">Enregistré</span>}
+        </div>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={4}
+          placeholder="Historique des échanges, contexte, points d'attention..."
+          className="mb-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+        />
+        <button
+          onClick={saveNotes}
+          disabled={savingNotes || notes === (company.notes ?? '')}
+          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+        >
+          {savingNotes ? 'Enregistrement...' : 'Enregistrer les notes'}
+        </button>
+      </section>
 
       <section className="rounded-lg border border-slate-200 bg-white p-4">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Contacts</h2>

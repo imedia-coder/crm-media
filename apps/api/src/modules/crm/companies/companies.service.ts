@@ -38,6 +38,7 @@ export class CompaniesService {
         estimatedRevenue: dto.estimatedRevenue,
         isClient: dto.isClient ?? false,
         clientSince: dto.isClient ? new Date() : undefined,
+        notes: dto.notes,
       },
     });
   }

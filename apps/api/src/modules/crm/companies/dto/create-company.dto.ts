@@ -16,4 +16,8 @@ export class CreateCompanyDto {
   @IsOptional()
   @IsBoolean()
   isClient?: boolean;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }
