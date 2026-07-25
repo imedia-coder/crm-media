@@ -9,6 +9,8 @@ import { PrismaModule } from './core/prisma/prisma.module';
 import { RetentionModule } from './core/retention/retention.module';
 import { StorageModule } from './core/storage/storage.module';
 import { TenancyModule } from './core/tenancy/tenancy.module';
+import { AiModule } from './modules/ai/ai.module';
+import { AutomationModule } from './modules/automation/automation.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -40,6 +42,8 @@ import { UsersModule } from './modules/users/users.module';
     ReportingModule,
     UsersModule,
     RetentionModule,
+    AiModule,
+    AutomationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -148,3 +148,39 @@ export async function apiUpload<T>(path: string, formData: FormData): Promise<T>
 export function apiFileUrl(path: string): string {
   return `${API_URL}${path}`;
 }
+
+export async function streamChat(
+  body: { conversationId?: string; message: string },
+  onChunk: (text: string) => void,
+): Promise<{ conversationId: string }> {
+  const doRequest = (accessToken: string | null) =>
+    fetch(`${API_URL}/ai/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      body: JSON.stringify(body),
+    });
+
+  let res = await doRequest(getAccessToken());
+  if (res.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (newToken) res = await doRequest(newToken);
+  }
+
+  if (!res.ok || !res.body) {
+    const errBody = await res.json().catch(() => null);
+    throw new ApiError(res.status, errBody?.message ?? res.statusText);
+  }
+
+  const conversationId = res.headers.get('X-Conversation-Id') ?? '';
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    onChunk(decoder.decode(value, { stream: true }));
+  }
+  return { conversationId };
+}

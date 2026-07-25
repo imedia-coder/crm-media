@@ -12,6 +12,7 @@ const NAV_SECTIONS = [
     links: [
       { href: '/dashboard', label: 'Tableau de bord' },
       { href: '/dashboard/planning', label: 'Planning' },
+      { href: '/dashboard/assistant', label: 'Assistant IA' },
     ],
   },
   {
@@ -46,7 +47,10 @@ const NAV_SECTIONS = [
   },
   {
     title: 'Administration',
-    links: [{ href: '/dashboard/team', label: 'Équipe' }],
+    links: [
+      { href: '/dashboard/team', label: 'Équipe' },
+      { href: '/dashboard/automation', label: 'Automatisation' },
+    ],
   },
 ];
 

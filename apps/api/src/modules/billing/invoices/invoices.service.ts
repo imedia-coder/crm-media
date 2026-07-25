@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationsService } from '../../../core/notifications/notifications.service';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
+import { AutomationService } from '../../automation/automation.service';
 import { computeTotals, nextDocumentNumber, round2 } from '../money.util';
 import { renderDocumentPdf } from '../pdf.util';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
@@ -13,6 +14,7 @@ export class InvoicesService {
   constructor(
     private readonly tenantPrisma: TenantPrismaService,
     private readonly notifications: NotificationsService,
+    private readonly automation: AutomationService,
   ) {}
 
   // Called after the payment transaction has committed (never from inside
@@ -23,14 +25,26 @@ export class InvoicesService {
   private async notifyIfNewlyPaid(invoiceId: string, isNowPaid: boolean) {
     if (!isNowPaid) return;
     const invoice = await this.tenantPrisma.client.invoice.findUnique({ where: { id: invoiceId } });
-    if (invoice?.projectId) {
+    if (!invoice) return;
+
+    let managerId: string | null = null;
+    if (invoice.projectId) {
       const project = await this.tenantPrisma.client.project.findUnique({ where: { id: invoice.projectId } });
-      if (project?.managerId) {
-        await this.notifications.notifyUser(project.managerId, 'INVOICE_PAID', `Facture payée : ${invoice.number}`, {
+      managerId = project?.managerId ?? null;
+      if (managerId) {
+        await this.notifications.notifyUser(managerId, 'INVOICE_PAID', `Facture payée : ${invoice.number}`, {
           link: '/dashboard/billing/invoices',
         });
       }
     }
+
+    const company = await this.tenantPrisma.client.company.findUnique({ where: { id: invoice.companyId } });
+    await this.automation.fire('INVOICE_PAID', {
+      companyId: invoice.companyId,
+      companyName: company?.name ?? null,
+      ownerId: managerId,
+      invoiceNumber: invoice.number,
+    });
   }
 
   findAll(query: ListInvoicesQuery) {

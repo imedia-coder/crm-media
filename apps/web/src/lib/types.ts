@@ -274,3 +274,63 @@ export interface Notification {
   readAt: string | null;
   createdAt: string;
 }
+
+export type AiMessageRole = 'USER' | 'ASSISTANT';
+
+export interface AiMessage {
+  id: string;
+  role: AiMessageRole;
+  content: string;
+  createdAt: string;
+}
+
+export interface AiConversation {
+  id: string;
+  title: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AiConversationWithMessages extends AiConversation {
+  messages: AiMessage[];
+}
+
+export type AutomationTrigger = 'QUOTE_ACCEPTED' | 'INVOICE_PAID' | 'DEAL_WON';
+
+export interface CreateProjectActionConfig {
+  type: 'CREATE_PROJECT';
+  config: { nameTemplate: string };
+}
+
+export interface CreateTaskActionConfig {
+  type: 'CREATE_TASK';
+  config: { titleTemplate: string; useCreatedProject: boolean; projectId?: string };
+}
+
+export interface SendNotificationActionConfig {
+  type: 'SEND_NOTIFICATION';
+  config: { titleTemplate: string };
+}
+
+export type AutomationAction = CreateProjectActionConfig | CreateTaskActionConfig | SendNotificationActionConfig;
+
+export interface AutomationRun {
+  id: string;
+  status: 'SUCCESS' | 'FAILED';
+  resultLog: string;
+  createdAt: string;
+}
+
+export interface AutomationRule {
+  id: string;
+  name: string;
+  trigger: AutomationTrigger;
+  isActive: boolean;
+  actions: AutomationAction[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AutomationRuleWithRuns extends AutomationRule {
+  runs: AutomationRun[];
+}

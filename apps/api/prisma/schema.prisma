@@ -35,6 +35,8 @@ model Tenant {
   contentItems   ContentItem[]
   mediaAssets    MediaAsset[]
   notifications  Notification[]
+  aiConversations AiConversation[]
+  automationRules AutomationRule[]
 
   @@map("tenants")
 }
@@ -80,6 +82,7 @@ model User {
   validatedContent   ContentItem[] @relation("ContentValidator")
   uploadedMedia      MediaAsset[]
   notifications      Notification[]
+  aiConversations    AiConversation[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -540,6 +543,88 @@ model Notification {
   @@index([tenantId])
   @@index([userId, readAt])
   @@map("notifications")
+}
+
+// ---------- AI ASSISTANT ----------
+
+model AiConversation {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages AiMessage[]
+
+  @@index([tenantId])
+  @@index([userId])
+  @@map("ai_conversations")
+}
+
+enum AiMessageRole {
+  USER
+  ASSISTANT
+}
+
+model AiMessage {
+  id             String         @id @default(uuid())
+  conversationId String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           AiMessageRole
+  content        String
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId])
+  @@map("ai_messages")
+}
+
+// ---------- AUTOMATION ----------
+
+enum AutomationTrigger {
+  QUOTE_ACCEPTED
+  INVOICE_PAID
+  DEAL_WON
+}
+
+enum AutomationRunStatus {
+  SUCCESS
+  FAILED
+}
+
+model AutomationRule {
+  id        String            @id @default(uuid())
+  tenantId  String
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  trigger   AutomationTrigger
+  isActive  Boolean           @default(true)
+  // Ordered list of { type: 'CREATE_PROJECT' | 'CREATE_TASK' | 'SEND_NOTIFICATION', config: {...} },
+  // validated at runtime by AutomationService — see automation-action.types.ts.
+  actions   Json
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  runs AutomationRun[]
+
+  @@index([tenantId])
+  @@index([tenantId, trigger])
+  @@map("automation_rules")
+}
+
+model AutomationRun {
+  id          String              @id @default(uuid())
+  ruleId      String
+  rule        AutomationRule      @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  status      AutomationRunStatus
+  triggerData Json
+  resultLog   String
+  createdAt   DateTime            @default(now())
+
+  @@index([ruleId])
+  @@map("automation_runs")
 }
 
 // ---------- BILLING ----------

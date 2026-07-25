@@ -45,6 +45,15 @@ export const ADMIN_PERMISSIONS = {
   RETENTION_RUN: 'admin.retention.run',
 } as const;
 
+export const AI_PERMISSIONS = {
+  ASSISTANT_USE: 'ai.assistant.use',
+} as const;
+
+export const AUTOMATION_PERMISSIONS = {
+  RULES_READ: 'automation.rules.read',
+  RULES_WRITE: 'automation.rules.write',
+} as const;
+
 export const MARKETING_PERMISSIONS = {
   CONTENT_READ: 'marketing.content.read',
   CONTENT_WRITE: 'marketing.content.write',

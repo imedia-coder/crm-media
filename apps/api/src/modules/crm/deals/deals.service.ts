@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
+import { AutomationService } from '../../automation/automation.service';
 import { CreateDealDto } from './dto/create-deal.dto';
 import { ListDealsQuery } from './dto/list-deals.query';
 import { MoveDealDto } from './dto/move-deal.dto';
@@ -7,7 +8,10 @@ import { UpdateDealDto } from './dto/update-deal.dto';
 
 @Injectable()
 export class DealsService {
-  constructor(private readonly tenantPrisma: TenantPrismaService) {}
+  constructor(
+    private readonly tenantPrisma: TenantPrismaService,
+    private readonly automation: AutomationService,
+  ) {}
 
   findAll(query: ListDealsQuery) {
     return this.tenantPrisma.client.deal.findMany({
@@ -82,7 +86,7 @@ export class DealsService {
   }
 
   async move(id: string, dto: MoveDealDto) {
-    return this.tenantPrisma.transaction(async (tx) => {
+    const result = await this.tenantPrisma.transaction(async (tx) => {
       const deal = await tx.deal.findUnique({ where: { id } });
       if (!deal) throw new NotFoundException('Deal not found');
 
@@ -92,14 +96,28 @@ export class DealsService {
       const updated = await tx.deal.update({ where: { id }, data: { stageId: dto.stageId } });
       await tx.dealStageHistory.create({ data: { dealId: id, stageId: dto.stageId } });
 
+      let companyName: string | null = null;
       if (targetStage.isWon && deal.companyId) {
         await tx.company.updateMany({
           where: { id: deal.companyId, isClient: false },
           data: { isClient: true, clientSince: new Date() },
         });
+        const company = await tx.company.findUnique({ where: { id: deal.companyId } });
+        companyName = company?.name ?? null;
       }
 
-      return updated;
+      return { updated, isWon: targetStage.isWon, companyName };
     });
+
+    if (result.isWon) {
+      await this.automation.fire('DEAL_WON', {
+        companyId: result.updated.companyId,
+        companyName: result.companyName,
+        ownerId: result.updated.ownerId,
+        dealTitle: result.updated.title,
+      });
+    }
+
+    return result.updated;
   }
 }

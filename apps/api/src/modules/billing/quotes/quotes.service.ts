@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationsService } from '../../../core/notifications/notifications.service';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
+import { AutomationService } from '../../automation/automation.service';
 import { computeTotals, nextDocumentNumber } from '../money.util';
 import { renderDocumentPdf } from '../pdf.util';
 import { CreateQuoteDto } from './dto/create-quote.dto';
@@ -12,6 +13,7 @@ export class QuotesService {
   constructor(
     private readonly tenantPrisma: TenantPrismaService,
     private readonly notifications: NotificationsService,
+    private readonly automation: AutomationService,
   ) {}
 
   findAll(query: ListQuotesQuery) {
@@ -105,14 +107,26 @@ export class QuotesService {
 
   async accept(id: string) {
     const quote = await this.transition(id, 'SENT', 'ACCEPTED');
+
+    let deal: { ownerId: string | null; title: string } | null = null;
     if (quote.dealId) {
-      const deal = await this.tenantPrisma.client.deal.findUnique({ where: { id: quote.dealId } });
+      deal = await this.tenantPrisma.client.deal.findUnique({ where: { id: quote.dealId } });
       if (deal?.ownerId) {
         await this.notifications.notifyUser(deal.ownerId, 'QUOTE_ACCEPTED', `Devis accepté : ${quote.number}`, {
           link: `/dashboard/billing/quotes`,
         });
       }
     }
+
+    const company = await this.tenantPrisma.client.company.findUnique({ where: { id: quote.companyId } });
+    await this.automation.fire('QUOTE_ACCEPTED', {
+      companyId: quote.companyId,
+      companyName: company?.name ?? null,
+      ownerId: deal?.ownerId ?? null,
+      dealTitle: deal?.title,
+      quoteNumber: quote.number,
+    });
+
     return quote;
   }
 
