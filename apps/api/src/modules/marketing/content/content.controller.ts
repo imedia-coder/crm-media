@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { CurrentUser } from '../../../core/auth/decorators/current-user.decorator';
 import { RequirePermissions } from '../../../core/auth/decorators/permissions.decorator';
 import { MARKETING_PERMISSIONS } from '../../../core/auth/permissions.constants';
@@ -68,6 +68,7 @@ export class ContentController {
   }
 
   @RequirePermissions(MARKETING_PERMISSIONS.CONTENT_WRITE)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.contentService.remove(id);

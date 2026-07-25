@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { RequirePermissions } from '../../../core/auth/decorators/permissions.decorator';
 import { CRM_PERMISSIONS } from '../../../core/auth/permissions.constants';
 import { CompaniesService } from './companies.service';
@@ -36,6 +36,7 @@ export class CompaniesController {
   }
 
   @RequirePermissions(CRM_PERMISSIONS.COMPANIES_WRITE)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.companiesService.remove(id);

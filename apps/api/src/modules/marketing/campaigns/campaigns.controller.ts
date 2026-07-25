@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { RequirePermissions } from '../../../core/auth/decorators/permissions.decorator';
 import { MARKETING_PERMISSIONS } from '../../../core/auth/permissions.constants';
 import { CampaignsService } from './campaigns.service';
@@ -35,6 +35,7 @@ export class CampaignsController {
   }
 
   @RequirePermissions(MARKETING_PERMISSIONS.CAMPAIGNS_WRITE)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.campaignsService.remove(id);

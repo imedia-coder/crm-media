@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
 import { CRM_PERMISSIONS } from '../../../core/auth/permissions.constants';
 import { RequirePermissions } from '../../../core/auth/decorators/permissions.decorator';
 import { CreatePipelineStageDto } from './dto/create-pipeline-stage.dto';
@@ -35,6 +35,7 @@ export class PipelineStagesController {
   }
 
   @RequirePermissions(CRM_PERMISSIONS.PIPELINE_MANAGE)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.pipelineStagesService.remove(id);

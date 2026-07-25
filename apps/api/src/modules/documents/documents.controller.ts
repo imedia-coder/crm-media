@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Post,
@@ -78,6 +80,7 @@ export class DocumentsController {
   }
 
   @RequirePermissions(DOCUMENT_PERMISSIONS.DOCUMENTS_WRITE)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.documentsService.remove(id);

@@ -2,6 +2,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
   Query,
@@ -56,6 +58,7 @@ export class MediaController {
   }
 
   @RequirePermissions(MARKETING_PERMISSIONS.MEDIA_WRITE)
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.mediaService.remove(id);
