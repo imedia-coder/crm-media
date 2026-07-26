@@ -43,7 +43,7 @@ export default function QuotesPage() {
     <div>
       <h1 className="mb-6 text-xl font-semibold">Devis</h1>
 
-      <form onSubmit={createQuote} className="mb-8 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+      <form onSubmit={createQuote} className="mb-8 space-y-3 rounded-xl border border-border bg-card shadow-sm p-4">
         <label className="block max-w-xs">
           <span className="mb-1 block text-sm font-medium text-slate-700">Entreprise</span>
           <select
@@ -61,7 +61,7 @@ export default function QuotesPage() {
           </select>
         </label>
         <LineItemsEditor lines={lines} onChange={setLines} />
-        <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+        <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover">
           Créer le devis
         </button>
       </form>
@@ -69,7 +69,7 @@ export default function QuotesPage() {
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
       {isLoading && <p className="text-sm text-slate-400">Chargement...</p>}
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>

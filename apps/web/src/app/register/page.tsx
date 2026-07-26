@@ -52,7 +52,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {isSubmitting ? 'Création...' : 'Créer mon agence'}
           </button>
@@ -60,7 +60,7 @@ export default function RegisterPage() {
 
         <p className="mt-6 text-sm text-slate-500">
           Déjà un compte ?{' '}
-          <Link href="/login" className="font-medium text-slate-900 underline">
+          <Link href="/login" className="font-medium text-primary underline">
             Se connecter
           </Link>
         </p>

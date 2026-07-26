@@ -34,7 +34,7 @@ export default function CampaignsPage() {
     <div>
       <h1 className="mb-6 text-xl font-semibold">Campagnes</h1>
 
-      <form onSubmit={onSubmit} className="mb-8 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4">
+      <form onSubmit={onSubmit} className="mb-8 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card shadow-sm p-4">
         <div className="min-w-[200px] flex-1">
           <Field label="Nom de la campagne" value={name} onChange={setName} placeholder="Lancement produit été" />
         </div>
@@ -50,7 +50,7 @@ export default function CampaignsPage() {
           </select>
         </label>
         <Field label="Objectif" value={objective} onChange={setObjective} required={false} placeholder="Notoriété, ventes..." />
-        <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+        <button type="submit" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover">
           Créer
         </button>
       </form>
@@ -60,7 +60,7 @@ export default function CampaignsPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {campaigns?.map((campaign) => (
-          <div key={campaign.id} className="rounded-lg border border-slate-200 bg-white p-4">
+          <div key={campaign.id} className="rounded-xl border border-border bg-card shadow-sm p-4">
             <div className="mb-2 flex items-start justify-between">
               <p className="font-medium text-slate-900">{campaign.name}</p>
               <Badge value={campaign.status} />

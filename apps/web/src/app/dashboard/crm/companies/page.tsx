@@ -35,7 +35,7 @@ export default function CompaniesPage() {
     <div>
       <h1 className="mb-6 text-xl font-semibold">Entreprises</h1>
 
-      <form onSubmit={onSubmit} className="mb-8 flex items-end gap-3 rounded-lg border border-slate-200 bg-white p-4">
+      <form onSubmit={onSubmit} className="mb-8 flex items-end gap-3 rounded-xl border border-border bg-card shadow-sm p-4">
         <div className="flex-1">
           <Field label="Nom de l'entreprise" value={name} onChange={setName} placeholder="Acme SARL" />
         </div>
@@ -46,7 +46,7 @@ export default function CompaniesPage() {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           Ajouter
         </button>
@@ -56,7 +56,7 @@ export default function CompaniesPage() {
       {loadError && <p className="mb-4 text-sm text-red-600">Impossible de charger les entreprises.</p>}
       {isLoading && <p className="text-sm text-slate-400">Chargement...</p>}
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>

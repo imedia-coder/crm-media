@@ -192,7 +192,7 @@ export default function CompanyDetailPage() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-900">Notes</h2>
           {notesSaved && <span className="text-xs text-green-600">Enregistré</span>}
@@ -208,13 +208,13 @@ export default function CompanyDetailPage() {
         <button
           onClick={saveNotes}
           disabled={savingNotes || notes === (company.notes ?? '') || !!company.anonymizedAt}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {savingNotes ? 'Enregistrement...' : 'Enregistrer les notes'}
         </button>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Contacts</h2>
         <ul className="mb-4 space-y-2 text-sm">
           {company.contacts.map((contact) => (
@@ -277,14 +277,14 @@ export default function CompanyDetailPage() {
             />
             Consentement marketing (RGPD)
           </label>
-          <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+          <button type="submit" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover">
             Ajouter un contact
           </button>
         </form>
       </section>
 
       {company.isClient && (
-        <section className="rounded-lg border border-slate-200 bg-white p-4">
+        <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Portail client</h2>
           <p className="mb-3 text-sm text-slate-500">
             Invitez un contact de cette entreprise à accéder à son espace client (projets, documents, devis, factures).
@@ -293,7 +293,7 @@ export default function CompanyDetailPage() {
             <Field label="Prénom" value={inviteFirstName} onChange={setInviteFirstName} />
             <Field label="Nom" value={inviteLastName} onChange={setInviteLastName} />
             <Field label="Email" type="email" value={inviteEmail} onChange={setInviteEmail} />
-            <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+            <button type="submit" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover">
               Inviter
             </button>
           </form>

@@ -123,7 +123,7 @@ export default function TeamPage() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <section className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
             <tr>
@@ -181,7 +181,7 @@ export default function TeamPage() {
         </table>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-border bg-card shadow-sm p-4">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Inviter un collaborateur</h2>
         <form onSubmit={inviteMember} className="flex flex-wrap items-end gap-3">
           <Field label="Prénom" value={inviteFirstName} onChange={setInviteFirstName} />
@@ -205,7 +205,7 @@ export default function TeamPage() {
           <button
             type="submit"
             disabled={inviting}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {inviting ? 'Envoi...' : 'Inviter'}
           </button>
@@ -218,7 +218,7 @@ export default function TeamPage() {
         )}
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-border bg-card shadow-sm p-4">
         <h2 className="mb-1 text-sm font-semibold text-slate-900">Politique de rétention des données (RGPD)</h2>
         <p className="mb-3 text-sm text-slate-500">
           Une purge automatique s&apos;exécute chaque nuit : jetons de connexion expirés depuis plus de 30 jours et
@@ -228,7 +228,7 @@ export default function TeamPage() {
         <button
           onClick={runPurge}
           disabled={purging}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           {purging ? 'Purge en cours...' : 'Lancer la purge maintenant'}
         </button>

@@ -17,7 +17,7 @@ export default function ReportingPage() {
     <div className="space-y-8">
       <h1 className="text-xl font-semibold">Reporting</h1>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
         <h2 className="mb-4 text-sm font-semibold text-slate-900">Chiffre d&apos;affaires encaissé (12 derniers mois)</h2>
         {revenueLoading && <p className="text-sm text-slate-400">Chargement...</p>}
         <div className="flex items-end gap-2" style={{ height: 160 }}>
@@ -25,7 +25,7 @@ export default function ReportingPage() {
             <div key={r.month} className="flex flex-1 flex-col items-center justify-end gap-1">
               <span className="text-xs text-slate-500">{r.total > 0 ? CURRENCY.format(r.total) : ''}</span>
               <div
-                className="w-full rounded-t bg-slate-900"
+                className="w-full rounded-t bg-primary"
                 style={{ height: `${Math.max(2, (r.total / revenueMax) * 120)}px` }}
               />
               <span className="text-xs text-slate-400">{r.month.slice(5)}</span>
@@ -34,7 +34,7 @@ export default function ReportingPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
         <h2 className="mb-4 text-sm font-semibold text-slate-900">Conversion du pipeline</h2>
         {pipelineLoading && <p className="text-sm text-slate-400">Chargement...</p>}
         <div className="space-y-2">
@@ -43,7 +43,7 @@ export default function ReportingPage() {
               <span className="w-40 shrink-0 text-sm text-slate-700">{stage.name}</span>
               <div className="h-4 flex-1 rounded-full bg-slate-100">
                 <div
-                  className={`h-4 rounded-full ${stage.isWon ? 'bg-green-600' : stage.isLost ? 'bg-red-500' : 'bg-slate-900'}`}
+                  className={`h-4 rounded-full ${stage.isWon ? 'bg-accent' : stage.isLost ? 'bg-destructive' : 'bg-primary'}`}
                   style={{ width: `${Math.max(2, (stage.dealCount / pipelineMax) * 100)}%` }}
                 />
               </div>
@@ -54,7 +54,7 @@ export default function ReportingPage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
         <h2 className="mb-4 text-sm font-semibold text-slate-900">Rentabilité des projets</h2>
         {projectsLoading && <p className="text-sm text-slate-400">Chargement...</p>}
         <div className="overflow-x-auto">

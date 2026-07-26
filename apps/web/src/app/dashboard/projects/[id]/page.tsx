@@ -99,7 +99,7 @@ export default function ProjectDetailPage() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <form onSubmit={addTask} className="flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4">
+      <form onSubmit={addTask} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="min-w-[200px] flex-1">
           <Field label="Nouvelle tâche" value={title} onChange={setTitle} placeholder="Créer les maquettes" />
         </div>
@@ -126,7 +126,7 @@ export default function ProjectDetailPage() {
             className="rounded-md border border-slate-300 px-3 py-2 text-sm"
           />
         </label>
-        <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+        <button type="submit" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover">
           Ajouter
         </button>
       </form>
@@ -136,7 +136,7 @@ export default function ProjectDetailPage() {
           const tasks = project.tasks.filter((t) => t.status === column.value);
           const overdueCount = tasks.filter((t) => t.dueDate && new Date(t.dueDate) < new Date()).length;
           return (
-            <div key={column.value} className="w-64 shrink-0 rounded-lg bg-slate-100 p-3">
+            <div key={column.value} className="w-64 shrink-0 rounded-xl bg-muted p-3">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm font-semibold text-slate-700">{column.label}</p>
                 <span className="text-xs text-slate-400">{tasks.length}</span>
@@ -145,7 +145,7 @@ export default function ProjectDetailPage() {
                 {tasks.map((task) => {
                   const overdue = task.dueDate && new Date(task.dueDate) < new Date();
                   return (
-                    <div key={task.id} className="rounded-md border border-slate-200 bg-white p-3 text-sm shadow-sm">
+                    <div key={task.id} className="rounded-lg border border-border bg-card p-3 text-sm shadow-sm transition-shadow hover:shadow-md">
                       <p className="font-medium text-slate-900">{task.title}</p>
                       <div className="mt-1 flex items-center gap-2">
                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_COLOR[task.priority]}`}>

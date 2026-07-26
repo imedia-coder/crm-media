@@ -96,10 +96,10 @@ export default function AssistantPage() {
 
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-4">
-      <aside className="w-64 shrink-0 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3">
+      <aside className="w-64 shrink-0 overflow-y-auto rounded-xl border border-border bg-card shadow-sm p-3">
         <button
           onClick={startNewConversation}
-          className="mb-3 w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700"
+          className="mb-3 w-full rounded-lg bg-primary px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover"
         >
           Nouvelle conversation
         </button>
@@ -107,8 +107,8 @@ export default function AssistantPage() {
           {conversations?.map((conv) => (
             <div
               key={conv.id}
-              className={`group flex items-center justify-between rounded-md px-2 py-1.5 text-sm ${
-                conv.id === conversationId ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
+              className={`group flex items-center justify-between rounded-lg px-2 py-1.5 text-sm transition-colors ${
+                conv.id === conversationId ? 'bg-primary text-white' : 'text-foreground/80 hover:bg-muted'
               }`}
             >
               <button onClick={() => setConversationId(conv.id)} className="flex-1 truncate text-left">
@@ -128,7 +128,7 @@ export default function AssistantPage() {
         </div>
       </aside>
 
-      <section className="flex flex-1 flex-col rounded-lg border border-slate-200 bg-white">
+      <section className="flex flex-1 flex-col rounded-xl border border-border bg-card shadow-sm">
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
           {messages.length === 0 && (
             <p className="text-sm text-slate-400">
@@ -140,7 +140,7 @@ export default function AssistantPage() {
             <div key={msg.id} className={`flex ${msg.role === 'USER' ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={`max-w-[75%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${
-                  msg.role === 'USER' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-900'
+                  msg.role === 'USER' ? 'bg-primary text-white' : 'bg-muted text-foreground'
                 }`}
               >
                 {msg.content || (sending && i === messages.length - 1 ? '...' : '')}
@@ -164,12 +164,12 @@ export default function AssistantPage() {
             }}
             rows={2}
             placeholder="Écrivez votre message... (Entrée pour envoyer, Maj+Entrée pour un saut de ligne)"
-            className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className="flex-1 rounded-lg border border-border px-3 py-2 text-sm transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/30"
           />
           <button
             type="submit"
             disabled={sending || !input.trim()}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {sending ? 'Envoi...' : 'Envoyer'}
           </button>

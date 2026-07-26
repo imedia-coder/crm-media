@@ -73,7 +73,7 @@ export default function ContentPage() {
     <div>
       <h1 className="mb-6 text-xl font-semibold">Calendrier éditorial</h1>
 
-      <form onSubmit={createContent} className="mb-8 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+      <form onSubmit={createContent} className="mb-8 space-y-3 rounded-xl border border-border bg-card shadow-sm p-4">
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[200px] flex-1">
             <Field label="Titre" value={title} onChange={setTitle} placeholder="Post lancement produit" />
@@ -122,7 +122,7 @@ export default function ContentPage() {
           <div className="flex-1">
             <Field label="Hashtags (séparés par des virgules)" value={hashtags} onChange={setHashtags} required={false} placeholder="#lancement, #agence" />
           </div>
-          <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+          <button type="submit" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover">
             Créer le brouillon
           </button>
         </div>
@@ -133,7 +133,7 @@ export default function ContentPage() {
 
       <div className="space-y-3">
         {items?.map((item) => (
-          <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-4">
+          <div key={item.id} className="rounded-xl border border-border bg-card shadow-sm p-4">
             <div className="mb-1 flex items-start justify-between">
               <div>
                 <p className="font-medium text-slate-900">{item.title}</p>
@@ -193,7 +193,7 @@ export default function ContentPage() {
                     className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
                   />
                 </label>
-                <button type="submit" className="rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white">
+                <button type="submit" className="rounded-md bg-primary px-3 py-1.5 text-sm text-white shadow-sm transition-colors hover:bg-primary-hover">
                   Confirmer
                 </button>
               </form>

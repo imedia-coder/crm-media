@@ -55,7 +55,7 @@ export default function PlanningPage() {
     <div>
       <h1 className="mb-6 text-xl font-semibold">Planning</h1>
 
-      <form onSubmit={createAppointment} className="mb-8 flex flex-wrap items-end gap-3 rounded-lg border border-slate-200 bg-white p-4">
+      <form onSubmit={createAppointment} className="mb-8 flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card shadow-sm p-4">
         <div className="min-w-[200px] flex-1">
           <Field label="Titre" value={title} onChange={setTitle} placeholder="RDV client, réunion d'équipe..." />
         </div>
@@ -102,7 +102,7 @@ export default function PlanningPage() {
             ))}
           </select>
         </label>
-        <button type="submit" className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+        <button type="submit" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover">
           Créer
         </button>
         {error && <p className="w-full text-sm text-red-600">{error}</p>}
@@ -110,7 +110,7 @@ export default function PlanningPage() {
 
       {isLoading && <p className="text-sm text-slate-400">Chargement...</p>}
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>

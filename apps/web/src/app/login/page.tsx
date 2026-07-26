@@ -54,7 +54,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {isSubmitting ? 'Connexion...' : 'Se connecter'}
           </button>
@@ -62,7 +62,7 @@ export default function LoginPage() {
 
         <p className="mt-6 text-sm text-slate-500">
           Pas encore d&apos;agence ?{' '}
-          <Link href="/register" className="font-medium text-slate-900 underline">
+          <Link href="/register" className="font-medium text-primary underline">
             Créer un compte
           </Link>
         </p>

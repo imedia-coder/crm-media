@@ -107,7 +107,7 @@ export default function AutomationPage() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <section className="rounded-xl border border-border bg-card shadow-sm p-4">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Nouvelle règle</h2>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="flex flex-wrap gap-3">
@@ -225,7 +225,7 @@ export default function AutomationPage() {
           <button
             type="submit"
             disabled={submitting || !name}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
           >
             {submitting ? 'Création...' : 'Créer la règle'}
           </button>
@@ -234,7 +234,7 @@ export default function AutomationPage() {
 
       <section className="space-y-3">
         {rules?.map((rule) => (
-          <div key={rule.id} className="rounded-lg border border-slate-200 bg-white p-4">
+          <div key={rule.id} className="rounded-xl border border-border bg-card shadow-sm p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-900">{rule.name}</p>
@@ -283,7 +283,7 @@ export default function AutomationPage() {
           </div>
         ))}
         {rules?.length === 0 && (
-          <p className="rounded-lg border border-slate-200 bg-white p-4 text-center text-sm text-slate-400">
+          <p className="rounded-xl border border-border bg-card shadow-sm p-4 text-center text-sm text-slate-400">
             Aucune règle d&apos;automatisation pour l&apos;instant.
           </p>
         )}

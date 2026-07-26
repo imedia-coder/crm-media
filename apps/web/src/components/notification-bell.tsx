@@ -38,7 +38,7 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-10 mt-2 w-80 rounded-lg border border-slate-200 bg-white shadow-lg">
+        <div className="absolute right-0 z-10 mt-2 w-80 rounded-xl border border-border bg-card shadow-lg">
           <div className="flex items-center justify-between border-b border-slate-100 px-3 py-2">
             <p className="text-sm font-semibold text-slate-900">Notifications</p>
             {count > 0 && (

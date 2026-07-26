@@ -113,10 +113,10 @@ export default function DashboardHome() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="lg:col-span-2 rounded-lg border border-slate-200 bg-white p-4">
+            <div className="lg:col-span-2 rounded-xl border border-border bg-card p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-900">Planning — rendez-vous et échéances</h2>
-                <button onClick={() => setShowApptForm((v) => !v)} className="text-sm text-slate-900 underline">
+                <button onClick={() => setShowApptForm((v) => !v)} className="text-sm text-primary underline">
                   {showApptForm ? 'Annuler' : '+ Nouveau RDV'}
                 </button>
               </div>
@@ -146,7 +146,7 @@ export default function DashboardHome() {
                       className="rounded-md border border-slate-300 px-3 py-2 text-sm"
                     />
                   </label>
-                  <button type="submit" className="rounded-md bg-slate-900 px-3 py-2 text-sm text-white">
+                  <button type="submit" className="rounded-md bg-primary px-3 py-2 text-sm text-white shadow-sm transition-colors hover:bg-primary-hover">
                     Créer
                   </button>
                   {apptError && <p className="w-full text-sm text-red-600">{apptError}</p>}
@@ -180,7 +180,7 @@ export default function DashboardHome() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
               <h2 className="mb-3 text-sm font-semibold text-slate-900">Accès rapide</h2>
               <div className="space-y-1">
                 {[

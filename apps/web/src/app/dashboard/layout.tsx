@@ -66,25 +66,32 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }, [isLoading, user, router]);
 
   if (isLoading || !user) {
-    return <div className="flex flex-1 items-center justify-center text-sm text-slate-500">Chargement...</div>;
+    return <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Chargement...</div>;
   }
 
   if (user.isClient) {
     return (
-      <div className="flex flex-1 items-center justify-center px-4 text-center text-sm text-slate-500">
+      <div className="flex flex-1 items-center justify-center px-4 text-center text-sm text-muted-foreground">
         Cet espace est réservé aux équipes de l&apos;agence. Le portail client sera bientôt disponible ici.
       </div>
     );
   }
 
+  const tenantName = tenant?.name ?? 'CRM Media';
+
   return (
     <div className="flex flex-1">
-      <aside className="w-60 shrink-0 border-r border-slate-200 bg-white px-4 py-6">
-        <p className="mb-6 px-2 text-sm font-semibold text-slate-900">{tenant?.name ?? 'CRM Media'}</p>
+      <aside className="w-60 shrink-0 border-r border-border bg-card px-4 py-6">
+        <div className="mb-6 flex items-center gap-2 px-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+            {tenantName.charAt(0).toUpperCase()}
+          </span>
+          <p className="truncate text-sm font-semibold text-foreground">{tenantName}</p>
+        </div>
         <nav className="space-y-6">
           {NAV_SECTIONS.map((section) => (
             <div key={section.title}>
-              <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+              <p className="mb-2 px-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 {section.title}
               </p>
               <div className="space-y-1">
@@ -94,8 +101,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={`block rounded-md px-2 py-1.5 text-sm ${
-                        active ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'
+                      className={`block rounded-lg px-2 py-1.5 text-sm transition-colors ${
+                        active
+                          ? 'bg-primary font-medium text-primary-foreground shadow-sm'
+                          : 'text-foreground/80 hover:bg-muted hover:text-foreground'
                       }`}
                     >
                       {link.label}
@@ -109,12 +118,15 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+        <header className="flex items-center justify-between border-b border-border bg-card px-6 py-3 shadow-sm">
           <div />
           <div className="flex items-center gap-4 text-sm">
             <NotificationBell />
-            <span className="text-slate-600">{displayName}</span>
-            <button onClick={() => logout().then(() => router.push('/login'))} className="text-slate-500 underline">
+            <span className="text-foreground/80">{displayName}</span>
+            <button
+              onClick={() => logout().then(() => router.push('/login'))}
+              className="rounded-lg px-2 py-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
               Déconnexion
             </button>
           </div>

@@ -13,3 +13,7 @@ coverage/
 .DS_Store
 .pnpm-store/
 apps/api/storage/
+
+# Third-party skills installed via `npx skills add` — reinstallable from
+# skills-lock.json, not source code we own.
+.agents/

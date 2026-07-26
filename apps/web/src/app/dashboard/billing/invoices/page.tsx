@@ -76,7 +76,7 @@ export default function InvoicesPage() {
     <div>
       <h1 className="mb-6 text-xl font-semibold">Factures</h1>
 
-      <form onSubmit={createFromQuote} className="mb-8 flex items-end gap-3 rounded-lg border border-slate-200 bg-white p-4">
+      <form onSubmit={createFromQuote} className="mb-8 flex items-end gap-3 rounded-xl border border-border bg-card shadow-sm p-4">
         <label className="block flex-1 max-w-sm">
           <span className="mb-1 block text-sm font-medium text-slate-700">Créer depuis un devis accepté</span>
           <select
@@ -96,7 +96,7 @@ export default function InvoicesPage() {
         <button
           type="submit"
           disabled={!selectedQuoteId}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover disabled:opacity-50"
         >
           Créer la facture
         </button>
@@ -105,7 +105,7 @@ export default function InvoicesPage() {
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
       {isLoading && <p className="text-sm text-slate-400">Chargement...</p>}
 
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-left text-xs uppercase text-slate-500">
             <tr>
@@ -188,7 +188,7 @@ export default function InvoicesPage() {
                             ))}
                           </select>
                         </label>
-                        <button type="submit" className="rounded-md bg-slate-900 px-3 py-1.5 text-sm text-white">
+                        <button type="submit" className="rounded-md bg-primary px-3 py-1.5 text-sm text-white shadow-sm transition-colors hover:bg-primary-hover">
                           Enregistrer
                         </button>
                       </form>
