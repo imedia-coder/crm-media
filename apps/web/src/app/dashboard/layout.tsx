@@ -38,6 +38,13 @@ const NAV_SECTIONS = [
     ],
   },
   {
+    title: 'WhatsApp',
+    links: [
+      { href: '/dashboard/whatsapp', label: 'Conversations' },
+      { href: '/dashboard/whatsapp/channels', label: 'Connexion' },
+    ],
+  },
+  {
     title: 'Facturation',
     links: [
       { href: '/dashboard/billing/quotes', label: 'Devis' },

@@ -21,6 +21,7 @@ import { PortalModule } from './modules/portal/portal.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { ReportingModule } from './modules/reporting/reporting.module';
 import { UsersModule } from './modules/users/users.module';
+import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { UsersModule } from './modules/users/users.module';
     RetentionModule,
     AiModule,
     AutomationModule,
+    WhatsAppModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -37,6 +37,8 @@ model Tenant {
   notifications  Notification[]
   aiConversations AiConversation[]
   automationRules AutomationRule[]
+  whatsappChannels WhatsAppChannel[]
+  whatsappConversations WhatsAppConversation[]
 
   @@map("tenants")
 }
@@ -183,6 +185,7 @@ model Contact {
   updatedAt DateTime @updatedAt
 
   deals Deal[]
+  whatsappConversations WhatsAppConversation[]
 
   @@index([tenantId])
   @@index([companyId])
@@ -736,4 +739,87 @@ model Payment {
   reference String?
 
   @@map("payments")
+}
+
+// ---------- WHATSAPP ----------
+
+enum WhatsAppChannelStatus {
+  PENDING
+  CONNECTED
+  ERROR
+}
+
+enum WhatsAppMessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum WhatsAppMessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model WhatsAppChannel {
+  id            String                @id @default(uuid())
+  tenantId      String
+  tenant        Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name          String
+  // Free text rather than an enum: Whapi.Cloud is the sole provider for V1,
+  // but a 2nd provider shouldn't require a migration to add later.
+  provider      String                @default("WHAPI")
+  // Plaintext for V1 — never returned by any GET endpoint. No
+  // encryption-at-rest utility exists elsewhere in this codebase to model
+  // against; revisit if that changes.
+  whapiToken    String
+  phoneNumber   String?
+  status        WhatsAppChannelStatus @default(PENDING)
+  webhookSecret String                @unique @default(uuid())
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  conversations WhatsAppConversation[]
+
+  @@index([tenantId])
+  @@map("whatsapp_channels")
+}
+
+model WhatsAppConversation {
+  id            String               @id @default(uuid())
+  tenantId      String
+  tenant        Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  channelId     String
+  channel       WhatsAppChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  // Counterparty's number, normalized (digits only) — not the channel's own number.
+  phoneNumber   String
+  displayName   String?
+  contactId     String?
+  contact       Contact?             @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  lastMessageAt DateTime?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  messages WhatsAppMessage[]
+
+  @@unique([channelId, phoneNumber])
+  @@index([tenantId])
+  @@index([contactId])
+  @@map("whatsapp_conversations")
+}
+
+model WhatsAppMessage {
+  id             String                   @id @default(uuid())
+  conversationId String
+  conversation   WhatsAppConversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  direction      WhatsAppMessageDirection
+  status         WhatsAppMessageStatus    @default(PENDING)
+  body           String
+  // Whapi's own message id — idempotency key against webhook retries.
+  whapiMessageId String?                  @unique
+  createdAt      DateTime                 @default(now())
+
+  @@index([conversationId])
+  @@map("whatsapp_messages")
 }
