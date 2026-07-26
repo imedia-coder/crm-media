@@ -54,6 +54,13 @@ export const AUTOMATION_PERMISSIONS = {
   RULES_WRITE: 'automation.rules.write',
 } as const;
 
+export const WHATSAPP_PERMISSIONS = {
+  CHANNELS_READ: 'whatsapp.channels.read',
+  CHANNELS_WRITE: 'whatsapp.channels.write',
+  CONVERSATIONS_READ: 'whatsapp.conversations.read',
+  CONVERSATIONS_WRITE: 'whatsapp.conversations.write',
+} as const;
+
 export const MARKETING_PERMISSIONS = {
   CONTENT_READ: 'marketing.content.read',
   CONTENT_WRITE: 'marketing.content.write',

@@ -334,3 +334,41 @@ export interface AutomationRule {
 export interface AutomationRuleWithRuns extends AutomationRule {
   runs: AutomationRun[];
 }
+
+export type WhatsAppChannelStatus = 'PENDING' | 'CONNECTED' | 'ERROR';
+
+export interface WhatsAppChannel {
+  id: string;
+  name: string;
+  provider: string;
+  phoneNumber: string | null;
+  status: WhatsAppChannelStatus;
+  webhookUrl: string;
+  createdAt: string;
+}
+
+export type WhatsAppMessageDirection = 'INBOUND' | 'OUTBOUND';
+export type WhatsAppMessageStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
+
+export interface WhatsAppMessage {
+  id: string;
+  direction: WhatsAppMessageDirection;
+  status: WhatsAppMessageStatus;
+  body: string;
+  createdAt: string;
+}
+
+export interface WhatsAppConversation {
+  id: string;
+  channelId: string;
+  phoneNumber: string;
+  displayName: string | null;
+  contactId: string | null;
+  contact?: { id: string; firstName: string; lastName: string } | null;
+  lastMessageAt: string | null;
+  createdAt: string;
+}
+
+export interface WhatsAppConversationWithMessages extends WhatsAppConversation {
+  messages: WhatsAppMessage[];
+}
