@@ -5,17 +5,16 @@ workflows:
     instance_type: mac_mini_m2
     working_directory: apps/mobile
 
+    integrations:
+      app_store_connect: codemagic_api_key
+
     environment:
+      ios_signing:
+        distribution_type: ad_hoc
+        bundle_identifier: "com.imedia.teleprompt.teleprompt_mobile"
       flutter: stable
       xcode: latest
       cocoapods: default
-      vars:
-        BUNDLE_ID: "com.imedia.teleprompt.teleprompt_mobile"
-        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
-        XCODE_SCHEME: "Runner"
-
-    integrations:
-      app_store_connect: codemagic_api_key
 
     triggering:
       events:
@@ -26,15 +25,6 @@ workflows:
       cancel_previous_builds: true
 
     scripts:
-      - name: Set up code signing (ad-hoc)
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_ADHOC \
-            --create
-          keychain add-certificates
-          xcode-project use-profiles
-
       - name: Get Flutter packages
         script: |
           flutter pub get
