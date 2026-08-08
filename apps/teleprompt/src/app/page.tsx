@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { TopBar } from "@/components/top-bar";
 import { ScriptCard } from "@/components/script-card";
 import { createScript, deleteScript, listScripts, listRecordings } from "@/lib/storage";
 import { Script, Recording } from "@/lib/types";
-import { PlusIcon, VideoIcon, WandIcon } from "@/components/icons";
+import { PlusIcon, VideoIcon, UploadIcon } from "@/components/icons";
+import { extractDocument, IMPORT_ACCEPT } from "@/lib/import-document";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [scripts, setScripts] = useState<Script[] | null>(null);
   const [recordings, setRecordings] = useState<Recording[]>([]);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     listScripts().then(setScripts);
@@ -22,6 +25,22 @@ export default function DashboardPage() {
   async function handleNewScript() {
     const script = await createScript();
     router.push(`/editor/${script.id}`);
+  }
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImporting(true);
+    try {
+      const { title, content } = await extractDocument(file);
+      const script = await createScript({ title, content });
+      router.push(`/editor/${script.id}`);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Import impossible.");
+    } finally {
+      setImporting(false);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -59,13 +78,24 @@ export default function DashboardPage() {
             Nouveau script
           </button>
           <button
-            onClick={handleNewScript}
-            title="Créer avec l'IA (bientôt disponible dans l'éditeur)"
-            className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3.5 font-medium text-card-foreground transition hover:border-primary/50"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importing}
+            title="Importer un fichier .txt, .pdf ou .docx"
+            className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3.5 font-medium text-card-foreground transition hover:border-primary/50 disabled:opacity-60"
           >
-            <WandIcon className="h-5 w-5" />
+            <UploadIcon className={`h-5 w-5 ${importing ? "animate-spin" : ""}`} />
           </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={IMPORT_ACCEPT}
+            onChange={handleImportFile}
+            className="hidden"
+          />
         </div>
+        {importing && (
+          <p className="mt-2 text-sm text-muted-foreground">Importation du fichier…</p>
+        )}
 
         <section className="mt-10">
           <div className="mb-3 flex items-baseline justify-between">

@@ -182,7 +182,36 @@ export function SettingsPanel({
             ))}
           </div>
         </section>
+
+        <section>
+          <p className="mb-2 text-sm font-medium text-muted-foreground">
+            Raccourcis &amp; télécommande
+          </p>
+          <div className="space-y-1.5 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
+            <Shortcut keys="Espace" action="Lecture / Pause" />
+            <Shortcut keys="↑ / ↓" action="Vitesse +/-" />
+            <Shortcut keys="← / →" action="Reculer / avancer 10s" />
+            <Shortcut keys="M" action="Mode miroir" />
+            <Shortcut keys="F" action="Plein écran" />
+            <Shortcut keys="R" action="Enregistrer (mode caméra)" />
+            <p className="pt-1.5 text-xs text-muted-foreground/80">
+              Télécommande Bluetooth (type déclencheur photo) : le bouton
+              déclenche Lecture / Pause.
+            </p>
+          </div>
+        </section>
       </div>
+    </div>
+  );
+}
+
+function Shortcut({ keys, action }: { keys: string; action: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span>{action}</span>
+      <kbd className="rounded border border-border bg-card px-1.5 py-0.5 font-mono text-xs text-foreground">
+        {keys}
+      </kbd>
     </div>
   );
 }

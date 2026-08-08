@@ -105,9 +105,27 @@ export const VideoIcon = (p: SVGProps<SVGSVGElement>) => (
     <path d="M16 10l6-3v10l-6-3" />
   </Icon>
 );
-export const WandIcon = (p: SVGProps<SVGSVGElement>) => (
+export const SmartFollowIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}>
-    <path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 6.2 19.2 4.8M17.8 11.8l1.4 1.4M3 21l9-9M12.2 6.2 10.8 4.8" />
+    <rect x="9" y="2" width="6" height="12" rx="3" />
+    <path d="M5 10a7 7 0 0 0 14 0" />
+    <path d="M3 6q2-2 3 0t3 0t3 0t3 0t3 0" />
+  </Icon>
+);
+export const HistoryIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M3 12a9 9 0 1 0 3-6.7M3 5v5h5" />
+    <path d="M12 7v5l3 3" />
+  </Icon>
+);
+export const UploadIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" />
+  </Icon>
+);
+export const LoaderIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M12 3a9 9 0 1 0 9 9" />
   </Icon>
 );
 export const AlignCenterIcon = (p: SVGProps<SVGSVGElement>) => (

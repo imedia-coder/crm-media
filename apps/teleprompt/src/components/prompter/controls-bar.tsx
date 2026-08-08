@@ -12,6 +12,7 @@ import {
   RecordIcon,
   RewindIcon,
   SettingsIcon,
+  SmartFollowIcon,
   StopIcon,
 } from "@/components/icons";
 import { formatDuration } from "@/lib/duration";
@@ -27,6 +28,7 @@ export function ControlsBar({
   isFullscreen,
   recordingState,
   recordingSeconds,
+  smartFollowActive,
   onBack,
   onTogglePlay,
   onSeekRelative,
@@ -36,6 +38,7 @@ export function ControlsBar({
   onToggleFullscreen,
   onToggleStudio,
   onRecordToggle,
+  onToggleSmartFollow,
 }: {
   visible: boolean;
   playing: boolean;
@@ -45,6 +48,7 @@ export function ControlsBar({
   isFullscreen: boolean;
   recordingState: "idle" | "countdown" | "recording" | "paused";
   recordingSeconds: number;
+  smartFollowActive: boolean;
   onBack: () => void;
   onTogglePlay: () => void;
   onSeekRelative: (deltaSeconds: number) => void;
@@ -54,6 +58,7 @@ export function ControlsBar({
   onToggleFullscreen: () => void;
   onToggleStudio: () => void;
   onRecordToggle: () => void;
+  onToggleSmartFollow: () => void;
 }) {
   return (
     <div
@@ -66,6 +71,15 @@ export function ControlsBar({
           <span className="flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-sm font-medium text-white">
             <RecordIcon className="h-3 w-3 text-destructive" />
             {formatDuration(recordingSeconds)}
+          </span>
+        </div>
+      )}
+
+      {smartFollowActive && (
+        <div className="flex justify-center pb-2">
+          <span className="flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-sm font-medium text-white">
+            <SmartFollowIcon className="h-3.5 w-3.5 text-primary" />
+            Smart Follow · écoute…
           </span>
         </div>
       )}
@@ -110,8 +124,10 @@ export function ControlsBar({
         <select
           value={speed}
           onChange={(e) => onSpeedChange(Number(e.target.value))}
+          disabled={smartFollowActive}
+          title={smartFollowActive ? "Vitesse automatique (Smart Follow actif)" : undefined}
           aria-label="Vitesse de défilement"
-          className="rounded-lg border border-white/20 bg-black/40 px-2 py-2 text-sm text-white"
+          className="rounded-lg border border-white/20 bg-black/40 px-2 py-2 text-sm text-white disabled:opacity-50"
         >
           {SPEED_PRESETS.map((s) => (
             <option key={s} value={s}>
@@ -136,6 +152,15 @@ export function ControlsBar({
           className={`rounded-lg p-2.5 hover:bg-white/10 ${studioMode ? "text-primary" : "text-white/80"}`}
         >
           <CameraIcon className="h-5 w-5" />
+        </button>
+
+        <button
+          onClick={onToggleSmartFollow}
+          aria-label="Smart Follow (suivi vocal)"
+          title="Smart Follow : le défilement suit votre voix"
+          className={`rounded-lg p-2.5 hover:bg-white/10 ${smartFollowActive ? "text-primary" : "text-white/80"}`}
+        >
+          <SmartFollowIcon className="h-5 w-5" />
         </button>
 
         {studioMode && (
