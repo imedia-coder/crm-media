@@ -292,84 +292,95 @@ class _PrompterScreenState extends State<PrompterScreen>
           final paddingTop = _viewportHeight * 0.4;
           final paddingBottom = _viewportHeight * 0.6;
 
-          return GestureDetector(
-            onTap: _revealControls,
-            onVerticalDragStart: (d) {
-              _dragStart = d.globalPosition;
-              if (_playing) _togglePlay();
-            },
-            onVerticalDragUpdate: (d) {
-              final start = _dragStart;
-              if (start == null) return;
-              final delta = start.dy - d.globalPosition.dy;
-              _dragStart = d.globalPosition;
-              _engine.nudge(delta);
-            },
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (_studioMode && _camera != null && _camera!.value.isInitialized)
-                  _CameraFill(controller: _camera!),
-                TeleprompterText(
-                  content: script.content,
-                  settings: settings,
-                  paddingTop: paddingTop,
-                  paddingBottom: paddingBottom,
-                  position: _position,
-                  contentKey: _contentKey,
-                  maxWidth: constraints.maxWidth * settings.textWidth,
-                ),
-                if (settings.markerEnabled)
-                  Align(
-                    alignment: Alignment.center,
-                    child: Container(
-                      height: 1,
-                      color: Colors.white.withValues(alpha: 0.25),
+          // The drag-to-scroll/tap-to-reveal gesture only wraps the
+          // background layer (camera + text + marker) — it used to wrap the
+          // whole screen including the control buttons, which put a
+          // pan-gesture recognizer in the same arena as every button's own
+          // tap recognizer and made taps unreliable (worst on iOS).
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _revealControls,
+                onVerticalDragStart: (d) {
+                  _dragStart = d.globalPosition;
+                  if (_playing) _togglePlay();
+                },
+                onVerticalDragUpdate: (d) {
+                  final start = _dragStart;
+                  if (start == null) return;
+                  final delta = start.dy - d.globalPosition.dy;
+                  _dragStart = d.globalPosition;
+                  _engine.nudge(delta);
+                },
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (_studioMode && _camera != null && _camera!.value.isInitialized)
+                      _CameraFill(controller: _camera!),
+                    TeleprompterText(
+                      content: script.content,
+                      settings: settings,
+                      paddingTop: paddingTop,
+                      paddingBottom: paddingBottom,
+                      position: _position,
+                      contentKey: _contentKey,
+                      maxWidth: constraints.maxWidth * settings.textWidth,
                     ),
-                  ),
-                if (_recState == _RecState.countdown)
-                  _CountdownOverlay(value: _countdownValue),
-                if (_recState == _RecState.finished && _finishedVideoPath != null)
-                  _FinishScreen(
-                    videoPath: _finishedVideoPath!,
-                    onRestart: () {
-                      _discardFinished();
-                      _engine.seek(0);
-                    },
-                    onDelete: _discardFinished,
-                    onSave: _saveFinishedRecording,
-                  ),
-                if (_recState != _RecState.countdown && _recState != _RecState.finished)
-                  AnimatedOpacity(
-                    opacity: _controlsVisible ? 1 : 0,
-                    duration: const Duration(milliseconds: 200),
-                    child: IgnorePointer(
-                      ignoring: !_controlsVisible,
-                      child: _ControlsBar(
-                        playing: _playing,
-                        speed: settings.scrollSpeed,
-                        mirrorMode: settings.mirrorMode,
-                        studioMode: _studioMode,
-                        recState: _recState,
-                        recordingSeconds: _recordingSeconds.round(),
-                        onBack: () => Navigator.pop(context),
-                        onTogglePlay: _togglePlay,
-                        onSeekRelative: _seekRelative,
-                        onSpeedChange: (v) => _updateSettings(settings.copyWith(scrollSpeed: v)),
-                        onToggleMirror: _toggleMirror,
-                        onOpenSettings: () => showSettingsSheet(
-                          context: context,
-                          settings: settings,
-                          onChange: _updateSettings,
+                    if (settings.markerEnabled)
+                      Align(
+                        alignment: Alignment.center,
+                        child: Container(
+                          height: 1,
+                          color: Colors.white.withValues(alpha: 0.25),
                         ),
-                        onToggleStudio: _toggleStudio,
-                        onRecordToggle: _onRecordToggle,
-                        onFinish: _finishRecording,
                       ),
+                  ],
+                ),
+              ),
+              if (_recState == _RecState.countdown)
+                _CountdownOverlay(value: _countdownValue),
+              if (_recState == _RecState.finished && _finishedVideoPath != null)
+                _FinishScreen(
+                  videoPath: _finishedVideoPath!,
+                  onRestart: () {
+                    _discardFinished();
+                    _engine.seek(0);
+                  },
+                  onDelete: _discardFinished,
+                  onSave: _saveFinishedRecording,
+                ),
+              if (_recState != _RecState.countdown && _recState != _RecState.finished)
+                AnimatedOpacity(
+                  opacity: _controlsVisible ? 1 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: IgnorePointer(
+                    ignoring: !_controlsVisible,
+                    child: _ControlsBar(
+                      playing: _playing,
+                      speed: settings.scrollSpeed,
+                      mirrorMode: settings.mirrorMode,
+                      studioMode: _studioMode,
+                      recState: _recState,
+                      recordingSeconds: _recordingSeconds.round(),
+                      onBack: () => Navigator.pop(context),
+                      onTogglePlay: _togglePlay,
+                      onSeekRelative: _seekRelative,
+                      onSpeedChange: (v) => _updateSettings(settings.copyWith(scrollSpeed: v)),
+                      onToggleMirror: _toggleMirror,
+                      onOpenSettings: () => showSettingsSheet(
+                        context: context,
+                        settings: settings,
+                        onChange: _updateSettings,
+                      ),
+                      onToggleStudio: _toggleStudio,
+                      onRecordToggle: _onRecordToggle,
+                      onFinish: _finishRecording,
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
           );
         },
       ),
