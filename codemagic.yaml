@@ -29,10 +29,14 @@ workflows:
         script: |
           flutter pub get
 
+      - name: Generate export_options.plist from the signing identities
+        script: |
+          xcode-project use-profiles
+
       - name: Build IPA for ad-hoc distribution
         script: |
           flutter build ipa --release \
-            --export-options-plist=$CM_EXPORT_OPTIONS_PLIST
+            --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
