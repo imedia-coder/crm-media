@@ -20,6 +20,8 @@ import {
   getCameraStream,
   SessionRecorder,
 } from "@/lib/recorder";
+import { SmartFollowTracker } from "@/lib/smart-follow";
+import { ContinuousSpeechRecognizer, isSpeechRecognitionSupported } from "@/lib/speech-recognition";
 import { TeleprompterTextView } from "@/components/prompter/text-view";
 import { ControlsBar } from "@/components/prompter/controls-bar";
 import { SettingsPanel } from "@/components/prompter/settings-panel";
@@ -52,6 +54,7 @@ export default function PrompterPage() {
   const [countdownValue, setCountdownValue] = useState(0);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [finishedVideoUrl, setFinishedVideoUrl] = useState<string | null>(null);
+  const [smartFollowActive, setSmartFollowActive] = useState(false);
 
   const [containerEl, setContainerEl] = useState<HTMLDivElement | null>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -61,6 +64,10 @@ export default function PrompterPage() {
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const finishedBlobRef = useRef<Blob | null>(null);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const smartFollowTrackerRef = useRef<SmartFollowTracker | null>(null);
+  const speechRecognizerRef = useRef<ContinuousSpeechRecognizer | null>(null);
+  const smartFollowSpeedRef = useRef(1);
+  const smartFollowIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [viewportHeight, setViewportHeight] = useState(0);
 
   // Load script, settings, session
@@ -214,9 +221,84 @@ export default function PrompterPage() {
     return () => {
       cameraStream?.getTracks().forEach((t) => t.stop());
       micCleanupRef.current?.();
+      speechRecognizerRef.current?.stop();
+      if (smartFollowIntervalRef.current) clearInterval(smartFollowIntervalRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Smart Follow (§36-39) — speech recognition drives scroll position and
+  // speed instead of the fixed WPM-derived rate. Corrections are applied as
+  // a partial nudge toward the matched position rather than a hard snap, so
+  // the motion stays smooth even though matches arrive in irregular bursts.
+  const stopSmartFollow = useCallback(() => {
+    speechRecognizerRef.current?.stop();
+    speechRecognizerRef.current = null;
+    smartFollowTrackerRef.current = null;
+    if (smartFollowIntervalRef.current) {
+      clearInterval(smartFollowIntervalRef.current);
+      smartFollowIntervalRef.current = null;
+    }
+    setSmartFollowActive(false);
+    if (settings) engineRef.current?.setSpeed(settings.scrollSpeed);
+  }, [settings]);
+
+  const toggleSmartFollow = useCallback(() => {
+    if (smartFollowActive) {
+      stopSmartFollow();
+      return;
+    }
+    if (!isSpeechRecognitionSupported()) {
+      alert("Smart Follow nécessite la reconnaissance vocale, non disponible sur ce navigateur.");
+      return;
+    }
+    if (!script) return;
+
+    const engine = engineRef.current;
+    const maxPosition = engine?.getMaxPosition() ?? 0;
+    const progress = maxPosition > 0 ? position / maxPosition : 0;
+    const tracker = new SmartFollowTracker(script.content);
+    tracker.reset(Math.round(tracker.totalWords * progress));
+    smartFollowTrackerRef.current = tracker;
+    smartFollowSpeedRef.current = settings?.scrollSpeed ?? 1;
+
+    const recognizer = new ContinuousSpeechRecognizer(script.language, {
+      onResult: (transcript, isFinal) => {
+        if (!isFinal) return;
+        const match = smartFollowTrackerRef.current?.matchTranscript(transcript);
+        if (!match) return;
+        const eng = engineRef.current;
+        if (!eng) return;
+        const target = eng.getMaxPosition() * (smartFollowTrackerRef.current?.progress ?? 0);
+        const current = eng.getPosition();
+        eng.seek(current + (target - current) * 0.35);
+      },
+      onError: (message) => {
+        if (message === "not-allowed" || message === "service-not-allowed") {
+          alert(
+            "Pour utiliser Smart Follow, l'application a besoin d'accéder à votre microphone.",
+          );
+          stopSmartFollow();
+        }
+      },
+    });
+    speechRecognizerRef.current = recognizer;
+    recognizer.start();
+
+    smartFollowIntervalRef.current = setInterval(() => {
+      const t = smartFollowTrackerRef.current;
+      if (!t || !script) return;
+      smartFollowSpeedRef.current = t.estimateSpeedMultiplier(
+        script.wordsPerMinute,
+        smartFollowSpeedRef.current,
+      );
+      engineRef.current?.setSpeed(smartFollowSpeedRef.current);
+    }, 400);
+
+    engineRef.current?.play();
+    setPlaying(true);
+    setSmartFollowActive(true);
+  }, [smartFollowActive, stopSmartFollow, script, settings, position]);
 
   const beginRecording = useCallback(() => {
     if (!cameraStream) return;
@@ -325,6 +407,13 @@ export default function PrompterPage() {
       if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)) return;
       switch (e.key) {
         case " ":
+        case "MediaPlayPause":
+        case "AudioVolumeUp":
+        case "AudioVolumeDown":
+          // Bluetooth "shutter"/presenter remotes (AB Shutter3 and similar)
+          // pair as HID keyboards and send volume/media keys — Web Bluetooth
+          // can't talk to them directly (HID is blocklisted), so this is the
+          // only way the web app can react to their button presses.
           e.preventDefault();
           togglePlay();
           break;
@@ -335,9 +424,11 @@ export default function PrompterPage() {
           updateSettings({ scrollSpeed: Math.max(0.25, (settings?.scrollSpeed ?? 1) - 0.25) });
           break;
         case "ArrowLeft":
+        case "PageUp":
           seekRelative(-10);
           break;
         case "ArrowRight":
+        case "PageDown":
           seekRelative(10);
           break;
         case "m":
@@ -465,6 +556,7 @@ export default function PrompterPage() {
           isFullscreen={isFullscreen}
           recordingState={recordingState}
           recordingSeconds={recordingSeconds}
+          smartFollowActive={smartFollowActive}
           onBack={() => router.push(`/editor/${script.id}`)}
           onTogglePlay={togglePlay}
           onSeekRelative={seekRelative}
@@ -474,6 +566,7 @@ export default function PrompterPage() {
           onToggleFullscreen={toggleFullscreen}
           onToggleStudio={toggleStudio}
           onRecordToggle={onRecordToggle}
+          onToggleSmartFollow={toggleSmartFollow}
         />
       )}
 

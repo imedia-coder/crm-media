@@ -1,5 +1,5 @@
 const DB_NAME = "teleprompt";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export const STORES = {
   scripts: "scripts",
@@ -7,6 +7,7 @@ export const STORES = {
   sessions: "sessions",
   recordings: "recordings",
   recordingBlobs: "recordingBlobs",
+  scriptVersions: "scriptVersions",
 } as const;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -35,6 +36,10 @@ function openDb(): Promise<IDBDatabase> {
         if (!db.objectStoreNames.contains(STORES.recordingBlobs)) {
           db.createObjectStore(STORES.recordingBlobs);
         }
+        if (!db.objectStoreNames.contains(STORES.scriptVersions)) {
+          const store = db.createObjectStore(STORES.scriptVersions, { keyPath: "id" });
+          store.createIndex("scriptId", "scriptId");
+        }
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
@@ -56,6 +61,19 @@ export async function idbGetAll<T>(store: string): Promise<T[]> {
   const db = await openDb();
   return new Promise((resolve, reject) => {
     const req = db.transaction(store, "readonly").objectStore(store).getAll();
+    req.onsuccess = () => resolve(req.result as T[]);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function idbGetAllByIndex<T>(
+  store: string,
+  indexName: string,
+  key: IDBValidKey,
+): Promise<T[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(store, "readonly").objectStore(store).index(indexName).getAll(key);
     req.onsuccess = () => resolve(req.result as T[]);
     req.onerror = () => reject(req.error);
   });

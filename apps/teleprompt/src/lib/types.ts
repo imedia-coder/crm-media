@@ -58,3 +58,14 @@ export interface Recording {
 }
 
 export const WPM_OPTIONS = [100, 120, 150, 180, 200] as const;
+
+export interface ScriptVersion {
+  id: string;
+  scriptId: string;
+  title: string;
+  content: string;
+  createdAt: number;
+}
+
+/** Oldest versions beyond this count are pruned when a new one is saved. */
+export const MAX_VERSIONS_PER_SCRIPT = 20;

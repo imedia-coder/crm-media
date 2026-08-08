@@ -51,6 +51,10 @@ export class ScrollEngine {
     this.maxPosition = max;
   }
 
+  getMaxPosition() {
+    return this.maxPosition;
+  }
+
   getPosition() {
     return this.position;
   }
