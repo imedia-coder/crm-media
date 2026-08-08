@@ -71,6 +71,18 @@ class _EditorScreenState extends State<EditorScreen> {
     });
   }
 
+  Future<void> _launchPrompter() async {
+    final script = _script;
+    if (script == null) return;
+    // The debounced autosave may not have run yet if the user taps Lancer
+    // right after typing — flush it now so the prompter never opens a
+    // stale (possibly empty) version of the script.
+    _debounce?.cancel();
+    await _save();
+    if (!mounted) return;
+    Navigator.pushNamed(context, '/prompter', arguments: script.id);
+  }
+
   @override
   void dispose() {
     _debounce?.cancel();
@@ -111,7 +123,7 @@ class _EditorScreenState extends State<EditorScreen> {
             padding: const EdgeInsets.only(right: 12),
             child: FilledButton.icon(
               style: FilledButton.styleFrom(backgroundColor: kPrimary),
-              onPressed: () => Navigator.pushNamed(context, '/prompter', arguments: script.id),
+              onPressed: _launchPrompter,
               icon: const Icon(Icons.play_arrow, size: 18),
               label: const Text('Lancer'),
             ),
