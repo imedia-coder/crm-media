@@ -11,7 +11,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: ad_hoc
-        bundle_identifier: "com.imedia.teleprompt.teleprompt_mobile"
+        bundle_identifier: "com.imedia.teleprompt.telepromptMobile"
       flutter: stable
       xcode: latest
       cocoapods: default
