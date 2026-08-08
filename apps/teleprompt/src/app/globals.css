@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/*
+ * Design system: dark-first, minimalist, content-over-chrome. Chosen because
+ * the app's core surface (the prompter) must disappear behind the text and
+ * the camera feed — see cahier des charges §62 "le texte avant tout".
+ * Accent is a single violet used sparingly for the one primary action per
+ * screen; everything else stays neutral so it never competes with on-screen
+ * text or the camera preview.
+ */
+:root {
+  --background: #0a0a0f;
+  --foreground: #f4f4f6;
+  --card: #15151d;
+  --card-foreground: #f4f4f6;
+  --primary: #7c5cff;
+  --primary-hover: #6a48f2;
+  --primary-foreground: #ffffff;
+  --secondary: #1f1f2b;
+  --secondary-foreground: #f4f4f6;
+  --accent: #22d3aa;
+  --accent-hover: #1ab894;
+  --accent-foreground: #06110d;
+  --muted: #1a1a24;
+  --muted-foreground: #9797a8;
+  --border: #26262f;
+  --destructive: #ef4444;
+  --destructive-hover: #dc2626;
+  --destructive-foreground: #ffffff;
+  --ring: #7c5cff;
+
+  /* Prompter reading surface — independent of app chrome theme (spec §19) */
+  --prompter-bg-classic: #000000;
+  --prompter-fg-classic: #ffffff;
+  --prompter-bg-yellow: #000000;
+  --prompter-fg-yellow: #ffde59;
+  --prompter-bg-light: #ffffff;
+  --prompter-fg-light: #0a0a0a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
