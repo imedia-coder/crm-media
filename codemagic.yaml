@@ -79,12 +79,11 @@ workflows:
           xcrun simctl install "$DEVICE_ID" build/ios/iphonesimulator/Runner.app
           xcrun simctl launch "$DEVICE_ID" com.imedia.teleprompt.telepromptMobile
           sleep 6
-          pwd
-          xcrun simctl io "$DEVICE_ID" screenshot screenshot_prompter.png
-          ls -la screenshot_prompter.png
+          xcrun simctl io "$DEVICE_ID" screenshot /tmp/screenshot_prompter.png
+          ls -la /tmp/screenshot_prompter.png
 
     artifacts:
-      - screenshot_*.png
+      - /tmp/screenshot_prompter.png
       - "*.png"
 
     publishing:
