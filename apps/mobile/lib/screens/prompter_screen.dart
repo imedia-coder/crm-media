@@ -300,6 +300,25 @@ class _PrompterScreenState extends State<PrompterScreen>
           return Stack(
             fit: StackFit.expand,
             children: [
+              // TEMPORARY DIAGNOSTIC — remove once the invisible-text issue
+              // on iOS is confirmed fixed.
+              Positioned(
+                top: 40,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    color: Colors.red,
+                    child: Text(
+                      'DEBUG viewport=${_viewportHeight.toStringAsFixed(0)} '
+                      'words=${script.content.split(RegExp(r"\s+")).where((w) => w.isNotEmpty).length} '
+                      'max=${_engine.maxPosition.toStringAsFixed(0)}',
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ),
+              ),
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: _revealControls,

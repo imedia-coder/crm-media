@@ -61,18 +61,24 @@ class TeleprompterText extends StatelessWidget {
       );
     }
 
+    // Positioned + a negative `top` offset instead of Transform.translate +
+    // ClipRect: functionally identical (Stack clips overflowing children on
+    // its own), but avoids a Transform/ClipRect combination that has shown
+    // rendering glitches with Impeller on iOS.
     return Container(
       color: colors.background,
       width: double.infinity,
       height: double.infinity,
-      child: ClipRect(
-        child: Transform.translate(
-          offset: Offset(0, -position),
-          child: Align(
-            alignment: Alignment.topCenter,
-            child: textColumn,
+      clipBehavior: Clip.hardEdge,
+      child: Stack(
+        children: [
+          Positioned(
+            top: -position,
+            left: 0,
+            right: 0,
+            child: Center(child: textColumn),
           ),
-        ),
+        ],
       ),
     );
   }
