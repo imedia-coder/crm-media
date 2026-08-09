@@ -58,7 +58,10 @@ class _PrompterScreenState extends State<PrompterScreen>
       onUpdate: (p) => setState(() => _position = p),
       onEnd: () => setState(() => _playing = false),
     );
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
+    // TEMPORARILY DISABLED for diagnosis — suspect this is interacting badly
+    // with iOS's view sizing. Re-enable once the invisible-content issue is
+    // confirmed unrelated.
+    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     WakelockPlus.enable();
     _load();
     _revealControls();
@@ -270,7 +273,7 @@ class _PrompterScreenState extends State<PrompterScreen>
     _engine.dispose();
     _camera?.dispose();
     WakelockPlus.disable();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: SystemUiOverlay.values);
+    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: SystemUiOverlay.values);
     super.dispose();
   }
 

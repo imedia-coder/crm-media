@@ -49,3 +49,46 @@ workflows:
         notify:
           success: true
           failure: true
+
+  ios-simulator-debug:
+    name: TelePrompt iOS Simulator Debug
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    working_directory: apps/mobile
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+
+    scripts:
+      - name: Get Flutter packages
+        script: |
+          flutter pub get
+
+      - name: Build for iOS Simulator (debug entry point)
+        script: |
+          flutter build ios --simulator --debug -t lib/main_debug_prompter.dart
+
+      - name: Boot simulator, install, launch, screenshot
+        script: |
+          DEVICE_ID=$(xcrun simctl list devices available iOS | grep -m1 -oE '[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}')
+          echo "Using simulator device: $DEVICE_ID"
+          xcrun simctl bootstatus "$DEVICE_ID" -b || xcrun simctl boot "$DEVICE_ID"
+          sleep 5
+          xcrun simctl install "$DEVICE_ID" build/ios/iphonesimulator/Runner.app
+          xcrun simctl launch "$DEVICE_ID" com.imedia.teleprompt.telepromptMobile
+          sleep 6
+          xcrun simctl io "$DEVICE_ID" screenshot "$CM_BUILD_DIR/screenshot_prompter.png"
+
+    artifacts:
+      - screenshot_*.png
+      - "*.png"
+
+    publishing:
+      email:
+        recipients:
+          - contact.initiativas@gmail.com
+        notify:
+          success: true
+          failure: true
