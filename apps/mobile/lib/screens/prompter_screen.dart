@@ -58,10 +58,7 @@ class _PrompterScreenState extends State<PrompterScreen>
       onUpdate: (p) => setState(() => _position = p),
       onEnd: () => setState(() => _playing = false),
     );
-    // TEMPORARILY DISABLED for diagnosis — suspect this is interacting badly
-    // with iOS's view sizing. Re-enable once the invisible-content issue is
-    // confirmed unrelated.
-    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     WakelockPlus.enable();
     _load();
     _revealControls();
@@ -273,7 +270,7 @@ class _PrompterScreenState extends State<PrompterScreen>
     _engine.dispose();
     _camera?.dispose();
     WakelockPlus.disable();
-    // SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: SystemUiOverlay.values);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: SystemUiOverlay.values);
     super.dispose();
   }
 
@@ -307,25 +304,6 @@ class _PrompterScreenState extends State<PrompterScreen>
           return Stack(
             fit: StackFit.expand,
             children: [
-              // TEMPORARY DIAGNOSTIC — remove once the invisible-text issue
-              // on iOS is confirmed fixed.
-              Positioned(
-                top: 40,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    color: Colors.red,
-                    child: Text(
-                      'DEBUG viewport=${_viewportHeight.toStringAsFixed(0)} '
-                      'words=${script.content.split(RegExp(r"\s+")).where((w) => w.isNotEmpty).length} '
-                      'max=${_engine.maxPosition.toStringAsFixed(0)}',
-                      style: const TextStyle(color: Colors.white, fontSize: 12),
-                    ),
-                  ),
-                ),
-              ),
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: _revealControls,
