@@ -65,11 +65,18 @@ class TeleprompterText extends StatelessWidget {
     // ClipRect: functionally identical (Stack clips overflowing children on
     // its own), but avoids a Transform/ClipRect combination that has shown
     // rendering glitches with Impeller on iOS.
+    //
+    // Container's `clipBehavior` requires an explicit `decoration:` — it
+    // can't be combined with the `color:` shorthand (Container asserts
+    // `decoration != null || clipBehavior == Clip.none`). That assertion is
+    // stripped in release builds, so this silently failed to render any
+    // content in release mode instead of throwing, while showing Flutter's
+    // red error screen in debug. Dropping clipBehavior here since Stack
+    // already clips its own children by default (Clip.hardEdge).
     return Container(
       color: colors.background,
       width: double.infinity,
       height: double.infinity,
-      clipBehavior: Clip.hardEdge,
       child: Stack(
         children: [
           Positioned(
