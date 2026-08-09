@@ -58,7 +58,7 @@ class _PrompterScreenState extends State<PrompterScreen>
       onUpdate: (p) => setState(() => _position = p),
       onEnd: () => setState(() => _playing = false),
     );
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
     WakelockPlus.enable();
     _load();
     _revealControls();
@@ -81,7 +81,7 @@ class _PrompterScreenState extends State<PrompterScreen>
     final script = _script;
     final settings = _settings;
     final box = _contentKey.currentContext?.findRenderObject() as RenderBox?;
-    if (script == null || settings == null || box == null) return;
+    if (script == null || settings == null || box == null || !mounted) return;
     final contentHeight = box.size.height;
     final maxPosition = (contentHeight - _viewportHeight).clamp(0, double.infinity).toDouble();
     _engine.setMaxPosition(maxPosition);
@@ -89,6 +89,10 @@ class _PrompterScreenState extends State<PrompterScreen>
     final baseRate =
         durationSeconds > 0 ? maxPosition / durationSeconds : settings.fontSize * 0.9;
     _engine.setBaseRate(baseRate > 0 ? baseRate : settings.fontSize * 0.9);
+    // setMaxPosition/setBaseRate mutate the engine directly without
+    // triggering a rebuild — force one so anything reading engine state
+    // (including the debug banner) reflects it immediately.
+    setState(() {});
   }
 
   void _updateSettings(ScriptSettings next) {
@@ -266,7 +270,7 @@ class _PrompterScreenState extends State<PrompterScreen>
     _engine.dispose();
     _camera?.dispose();
     WakelockPlus.disable();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: SystemUiOverlay.values);
     super.dispose();
   }
 
