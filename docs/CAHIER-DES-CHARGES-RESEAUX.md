@@ -4,6 +4,11 @@
 > Version rendue (mise en page, diagrammes) : artifact `Agency Hub Réseaux`
 > (https://claude.ai/code/artifact/1ca8daa2-7f35-4ce2-8f63-1a6d3067d3be).
 > Voir aussi [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+>
+> **Le Studio Vidéo IA est le cœur du produit** (transformer une vidéo longue en plusieurs
+> shorts prêts à publier, façon Clipzi / Opus Clip, intégré à la gestion des clients).
+> Spec dédiée : [`STUDIO-VIDEO-IA.md`](./STUDIO-VIDEO-IA.md) — pipeline, DAG de jobs, modèle de
+> données détaillé, build vs buy, phasage Studio-first. Ce document couvre le reste du module.
 
 ## Objectif
 
@@ -50,8 +55,12 @@ front Next.js). Le module Réseaux le **prolonge**.
   compte, rafraîchissement des tokens.
 - **Moteur de publication** : planificateur, file d'attente, tentatives/retries, fallback
   « brouillon » ou « action manuelle » par réseau.
-- **Studio Vidéo IA** : upload → transcription → analyse → détection de clips → montage auto →
-  sous-titres → contrôle de format → export, en jobs asynchrones.
+- **Studio Vidéo IA** *(cœur du produit)* : upload → transcription → analyse → détection de
+  clips scorés + hooks → montage auto (silences, recadrage, sous-titres) → contrôle de format →
+  export, en jobs asynchrones. Approche **hybride** : acheter la commodité (ASR, diarisation,
+  détection de plans, recadrage active-speaker, rendu sous-titres), construire ce qui est le
+  produit (sélection des clips, score, variantes A/B, aperçu/validation, rattachement
+  publication). Détail : [`STUDIO-VIDEO-IA.md`](./STUDIO-VIDEO-IA.md).
 - **Calendrier éditorial** drag & drop, « une publication → plusieurs réseaux » (variantes).
 - **Validation client** avec fil de commentaires horodaté.
 - **Brand Kit** + fiche de contexte IA (public, ton, langues, objectif).
@@ -79,15 +88,20 @@ front Next.js). Le module Réseaux le **prolonge**.
 Conserver le monolithe modulaire NestJS et la base PostgreSQL unique + RLS. Ajouter :
 une **file d'attente** (Redis + BullMQ), un **parc de workers**, un **service de traitement vidéo**.
 
+Le Studio étant le cœur, le **pipeline vidéo** est la principale contrainte de scaling (avant le
+moteur de publication) : workers GPU distincts (ASR + CV) et CPU (ffmpeg), stockage objets
+étagé, upload résumable (tus), quotas **minutes-source** par tenant. Voir [`STUDIO-VIDEO-IA.md`](./STUDIO-VIDEO-IA.md) §3 (DAG de jobs) et §5 (infra).
+
 | Couche | Choix | Note |
 |---|---|---|
 | Front web | Next.js 16 · React 19 · Tailwind 4 · SWR | En place. Ajout : calendrier drag & drop, éditeur de sous-titres, lecteur timeline |
 | API | NestJS · Prisma · REST `/api/v1` | Nouveaux modules `social`, `publishing`, `studio`, `validation`, `analytics`, `plans` |
 | Base | PostgreSQL + RLS | `tenant_id` partout ; `USING (tenant_id = current_setting('app.tenant_id')::uuid)` |
 | File / cache | **Redis + BullMQ** *(nouveau)* | Publication programmée, retries, transcodage, transcription, analytics, PDF |
-| Workers | Process Node séparés *(nouveau)* | `worker-publish`, `worker-video`, `worker-analytics`, `worker-reports` |
-| Stockage objets | S3-compatible (R2 / Scaleway) | Médias, rendus, miniatures, PDF. Chemins `tenant_id/client_id/…`, URLs signées |
-| Traitement vidéo | **ffmpeg + Whisper (ASR)** *(nouveau)* | Découpe, recadrage 9:16, silences, incrustation sous-titres, normalisation audio |
+| Workers | Process Node séparés *(nouveau)* | `worker-publish`, `worker-video-gpu` (ASR + CV), `worker-video-cpu` (ffmpeg), `worker-analytics`, `worker-reports` |
+| Stockage objets | S3-compatible (R2 / Scaleway), **étagé** | Bruts (froid après 30 j), proxys (chaud), rendus (chaud → froid), miniatures, PDF. Chemins `tenant_id/client_id/project_id/…`, URLs signées |
+| Traitement vidéo | **ffmpeg + Whisper (ASR au mot) + pyannote + PySceneDetect + MediaPipe/LightASD + libass** *(nouveau)* | Proxy, découpe, retrait silences/tics, recadrage active-speaker 9:16/4:5/1:1, incrustation sous-titres mot-à-mot, loudnorm. Détail & build vs buy : [`STUDIO-VIDEO-IA.md`](./STUDIO-VIDEO-IA.md) §2 |
+| Upload | **tus (résumable)** *(nouveau)* | Sources 60 min / plusieurs Go |
 | IA générative | API Claude (Anthropic) | Prompts templatés par cas d'usage |
 | Temps réel | WebSocket (Nest Gateway) | Avancement jobs vidéo, mises à jour pipeline, Inbox |
 | Connecteurs | `packages/connectors/{meta,tiktok}` | Un adaptateur par réseau, credentials chiffrés par tenant |
@@ -100,9 +114,13 @@ Redis et répond. Les workers portent le travail lourd et sont mis à l'échelle
 | Job | Déclencheur | Idempotence | Retry |
 |---|---|---|---|
 | `publish.target` | Scheduler à l'heure programmée | clé = `targetId`, statut vérifié avant envoi | 3 tentatives (backoff expo) → `ACTION_REQUISE` |
-| `video.transcribe` | Upload d'une vidéo au Studio | `mediaAssetId` + hash | 2 → job échoué visible |
-| `video.analyze` | Après transcription | `videoProjectId` | 2 |
-| `video.render` | Export d'un clip | `renderJobId` | 2 ; rendu partiel supprimé |
+| `video.ingest` | Upload terminé | `mediaAssetId` + checksum | 2 ; produit le proxy + probe |
+| `video.transcribe` | Proxy prêt | `mediaAssetId` + checksum | 2 → job échoué visible ; cache par checksum |
+| `video.analyze.signal` | Proxy prêt (parallèle) | `videoProjectId` + `analysisVersion` | 2 ; plans / silences / énergie |
+| `video.analyze.diarize` | Proxy prêt (parallèle) | idem | 2 ; tours de parole |
+| `video.select` | transcribe + analyze finis (**join**) | `videoProjectId` + `analysisVersion` | 2 ; LLM → `VideoClip[]` scorés + hooks |
+| `video.render` | Clip sélectionné (fan-out format × variante) | `renderJobId` | 2 ; rendu partiel supprimé |
+| `video.formatcheck` | Rendu prêt | `renderJobId` + `network` | 1 ; PASS/WARN/FAIL |
 | `analytics.pull` | CRON horaire par compte | upsert `(accountId, date, metric)` | silencieux ; alerte après 6 échecs |
 | `token.refresh` | CRON quotidien, token < 7 j | `socialAccountId` | échec → capacité `EXPIRED` |
 | `report.monthly` | CRON le 1er, ou manuel | `(clientId, période)` | 2 |
@@ -145,11 +163,13 @@ conventions Agency Hub (`createdAt/updatedAt`, `@@map` snake_case, anonymisation
 | `SubtitleTemplate` | Style de sous-titres réutilisable | `font`, `position`, `size`, `animation`, `color`, `strokeColor`, `logoOverlayId` |
 | `CaptionTemplate` | Gabarit de légende par plateforme & ton | `network`, `tone`, `body`, `placeholders[]` |
 | `HashtagSet` | Jeu de hashtags nommé | `name`, `tags[]`, `kind` (GENERAL/NICHE/GEO/BRAND) |
-| `VideoProject` | Source longue importée au Studio | `sourceMediaId`, `status` (UPLOADED/TRANSCRIBING/ANALYZING/READY), `style` |
-| `Transcript / TranscriptSegment` | Transcription horodatée | `lang`, `text` ; segment : `startMs`, `endMs`, `speaker`, `confidence` |
-| `VideoClip` | Extrait candidat détecté par l'IA | `startMs`, `endMs`, `score`, `hookText`, `reason`, `selected`, `targetDurations[]` |
-| `RenderJob` | Export d'un clip | `clipId`, `aspect`, `subtitleTemplateId`, `options Json`, `status`, `outputMediaId` |
+| `VideoProject` | Source longue importée au Studio | `sourceMediaId`, `proxyMediaId`, `sourceDurationMs`, `sourceWidth/Height/Fps`, `analysisVersion`, `stageStatus Json` (ingest/transcribe/analyze/select), `lang`, `style`, `costCents` |
+| `Transcript / TranscriptSegment` | Transcription horodatée **au mot** | `lang`, `text` ; segment : `startMs`, `endMs`, `speaker`, `confidence`, `words Json` (`[{text,startMs,endMs,confidence}]` — karaoké + coupes propres) |
+| `VideoClip` | Extrait candidat scoré par l'IA | `startMs`, `endMs`, `scoreBreakdown Json` (hook/autonomy/clarity/pace/emotion/lengthFit), `hookText`, `hookVariants Json`, `reason`, `topicLabel`, `editDecisionList Json`, `parentClipId`, `selected`, `targetDurations[]` |
+| `RenderJob` | Export d'1 clip × 1 format × 1 variante | `clipId`, `variantLabel`, `aspect`, `cropPath Json?`, `zoomEvents Json?`, `captionStyleId`, `options Json`, `status`, `previewMediaId`, `outputMediaId`, `costCents`, `engineVersion` |
 | `FormatCheck` | Contrôle anti-erreur d'un média/target | `network`, `checks Json` (résolution, durée, ratio, audio, poids), `result` (PASS/WARN/FAIL) |
+| `AnalysisFeature` | Résultat brut d'analyse signal (1 ligne / type) | `videoProjectId`, `kind` (SHOTS/SILENCES/SPEAKERS/ENERGY/TOPICS), `data Json`, `analysisVersion`, `computedAt` |
+| `ClipFeedback` | Retour analytics → sélection (boucle fermée) | `videoClipId`, `publicationTargetId`, `metricSnapshot Json`, `performedWell Bool?` |
 | `ValidationRequest` | Lot de contenus envoyés au client | `status` (OPEN/PARTIAL/CLOSED), `dueAt`, `channel` (portail/WhatsApp/email) |
 | `ValidationDecision` | Décision du client sur un contenu | `decision` (APPROVED/REJECTED/CHANGES), `decidedBy`, `decidedAt` |
 | `ContentComment` | Fil horodaté sur un contenu | `authorId` (agence ou client), `body`, `attachmentIds[]`, `resolvedAt` |
@@ -429,11 +449,16 @@ Chaque `PublicationTarget` est indépendante : IG peut être « Publié » penda
 
 ### 7.2 Studio vidéo — chaîne asynchrone
 
-`Upload (+ checksum) → Transcription (Whisper) → Analyse (silences · plans · hooks) → Détection
-(clips + score) → [Choix opérateur] → Rendu (9:16 · sous-titres · audio) → Contrôle format
-réseau → Médiathèque (statut finalisé)`. Jobs BullMQ, progression WebSocket ; l'échec d'un job
-est visible et n'efface pas les précédents. Seule l'étape « Choix » est bloquante côté humain ;
-une automatisation peut enchaîner Rendu → contrôle → publication programmée.
+`Upload résumable (+ checksum) → Ingest (proxy + probe) → [Transcription au mot ∥ Analyse
+signal ∥ Diarisation] → (join) Sélection LLM (clips scorés + hooks A/B) → [Choix opérateur] →
+Rendu (fan-out : format × variante — silences, recadrage active-speaker, sous-titres mot-à-mot,
+loudnorm) → Contrôle format réseau → Médiathèque (lifecycle finalisé)`. Jobs BullMQ en **DAG**
+(fan-out analyse → join sélection → fan-out rendu), progression WebSocket par étape ; l'échec
+d'un job est visible et n'efface pas les précédents. Cache par `checksum` (ré-import = pas de
+ré-analyse). Seule l'étape « Choix » est bloquante côté humain ; une automatisation peut
+enchaîner Rendu → contrôle → publication programmée. Rendu limité aux clips **sélectionnés** ×
+formats **demandés** ; les variantes ne re-rendent que les ~2 s de hook. Détail complet :
+[`STUDIO-VIDEO-IA.md`](./STUDIO-VIDEO-IA.md) §3.
 
 ### 7.3 Validation client — boucle
 
@@ -538,6 +563,8 @@ langue de sortie explicite · origine (modèle, prompt template, date) tracée d
 ## 11. Roadmap MVP → V2 → V3
 
 > Ne pas développer les 40 fonctions d'un coup. Le MVP est déjà un logiciel puissant.
+> **Le Studio est la tranche prioritaire** : c'est ce qui vend. Phasage Studio-first détaillé
+> dans [`STUDIO-VIDEO-IA.md`](./STUDIO-VIDEO-IA.md) §7.
 
 ### V1 — MVP
 
@@ -548,7 +575,8 @@ langue de sortie explicite · origine (modèle, prompt template, date) tracée d
 | Clients | Workspace & onglets (E-04/05), fiche contexte IA, Brand Kit minimal (E-20) |
 | Réseaux | Connexion IG/FB/TikTok (E-06), statuts de capacité, refresh token, fallback |
 | Médiathèque | Import, filtres, dossiers, tags, contrôle de format (E-07) |
-| Studio IA | Import, transcription, analyse, clips 30/45/60 s, montage auto 2 styles, sous-titres + template client (E-08/09/10) |
+| Studio IA *(tranche prioritaire)* | Upload résumable + proxy, ASR au mot (FR), retrait silences/tics, sélection LLM (8–15 clips scorés + 1 hook), rendu **9:16 seul**, **1** style de sous-titres mot-à-mot + template client, recadrage **center-crop + visage simple** (pas de tracking), aperçu + retouche in/out, « Envoyer vers publication » (E-08/09/10) |
+| Studio IA — V1.5 | Recadrage active-speaker (tracking + Kalman), 3 styles de sous-titres, 4 formats + Original, variantes hook A/B/C, éditeur de sous-titres ligne-à-ligne, `FormatCheck` par réseau |
 | IA texte | Légendes par plateforme (E-11), hashtags + sets (E-12) |
 | Programmation | Calendrier drag & drop (E-13), éditeur multi-réseaux + checklist (E-14), pipeline (E-15) |
 | Validation | Lots + décisions + fil de commentaires + portail client (E-16) |
@@ -558,8 +586,10 @@ langue de sortie explicite · origine (modèle, prompt template, date) tracée d
 
 Automatisations avancées (E-18) · Insights IA (E-22) + rapports mensuels PDF automatiques
 (E-23) ; `worker-analytics` & `worker-reports` · Campagnes complètes (E-19), banque de
-templates + verrouillage de marque (E-20) · Studio : styles supplémentaires, recadrage visage,
-zoom dynamique, multilingue sous-titres · Équipe & tâches liées aux contenus (E-17) ·
+templates + verrouillage de marque (E-20) · Studio : zoom / punch-in dynamiques, coupes
+multi-locuteurs (diarisation), **score calibré sur les analytics réels** (`ClipFeedback` —
+boucle fermée), pistes sous-titres multilingues (PT / créole), presets « style client » ·
+Équipe & tâches liées aux contenus (E-17) ·
 Abonnements & quotas (E-24) reliés à la facturation.
 
 ### V3
@@ -577,7 +607,8 @@ Starter / Pro / Agency / Enterprise) — déjà permise par l'architecture (tena
 | Sujet | Risque | Piste |
 |---|---|---|
 | Audit TikTok / revue Meta | Délais longs ; publication directe indisponible au lancement | Lancer les demandes tout de suite ; MVP en `DRAFT_ONLY` / `MANUAL`, bascule `AUTO` à l'obtention |
-| Montage automatique | Build interne coûteux (détection plans, recadrage visage, silences) | V1 : ffmpeg + Whisper + heuristiques ; évaluer un service tiers avant de sur-investir |
+| Montage automatique | Build interne coûteux ; **recadrage active-speaker** = le point dur (crop qui « saute » si bâclé) | Hybride : acheter la commodité, construire la sélection/score/UX ; V1 center-crop assumé, V1.5 OSS (LightASD), évaluer une API dédiée **après** avoir mesuré la qualité center-crop. Voir [`STUDIO-VIDEO-IA.md`](./STUDIO-VIDEO-IA.md) §2, §6 |
+| Cible mouvante vs incumbents | Opus Clip / Vizard / Klap avancent vite sur la qualité de montage | Ne pas rivaliser sur le montage ; vendre l'**intégration agence** (clips → calendrier → validation → publication → résultats, multi-clients, Brand Kit auto, analytics qui nourrissent la sélection) |
 | Coût & latence transcription / rendu | Facture IA + temps machine sur vidéos longues | Quotas par tenant, file dédiée, transcription à la demande, cache par `checksum` |
 | Stockage vidéo | Volumétrie qui explose (4K + rendus) | Rétention des bruts, transcodage proxy, archivage froid |
 | Rate-limits API réseaux | Blocage en pic de programmation | File par compte, backoff, lissage des créneaux |
@@ -588,9 +619,13 @@ Starter / Pro / Agency / Enterprise) — déjà permise par l'architecture (tena
 
 1. Créer l'app Meta (Business) et le compte développeur TikTok ; lancer les revues d'app.
 2. Poser les migrations Prisma des entités §4.3 + policies RLS (motif `subcontractors_rls`).
-3. Monter Redis + BullMQ et le squelette `worker-publish` / `worker-video`.
+3. Monter Redis + BullMQ et le squelette `worker-publish` / `worker-video-gpu` / `worker-video-cpu`.
 4. Implémenter l'adaptateur Meta (IG/FB) de bout en bout sur un client pilote, puis TikTok en `DRAFT_ONLY`.
-5. Livrer la tranche verticale : E-06 → E-07 → E-14 → E-15 → E-21 pour un seul client réel.
+5. Livrer la tranche verticale publication : E-06 → E-07 → E-14 → E-15 → E-21 pour un seul client réel.
+6. **Tranche verticale Studio V1** sur une vraie vidéo d'un client pilote : upload → proxy →
+   ASR → silences → `video.select` → aperçu → rendu 9:16 → médiathèque → publication. Itérer le
+   prompt `video.select` sur ~10 vidéos réelles (pertinence des clips mesurée à la main).
+   Migrations Prisma Studio : voir [`STUDIO-VIDEO-IA.md`](./STUDIO-VIDEO-IA.md) §9.
 
 ---
 
@@ -599,6 +634,13 @@ Starter / Pro / Agency / Enterprise) — déjà permise par l'architecture (tena
 | Date | Incrément | Contenu |
 |---|---|---|
 | 2026-09-07 | Cadrage | Ce document + artifact rendu |
+| 2026-09-08 | Cadrage — Studio = cœur | Nouveau doc [`STUDIO-VIDEO-IA.md`](./STUDIO-VIDEO-IA.md). Studio Vidéo IA repositionné comme cœur du produit (façon Clipzi/Opus Clip). MàJ §1, §3 (workers GPU/CPU, tus, stockage étagé, DAG de 7 jobs), §4.3 (entités `VideoProject`/`TranscriptSegment`/`VideoClip`/`RenderJob` étendues + `AnalysisFeature`, `ClipFeedback`), §7.2 (chaîne async en DAG), §11 (V1 Studio resserré + V1.5, V2 boucle fermée), §12 (build vs buy hybride, risque cible mouvante, étape 6 tranche Studio). |
 | 2026-09-07 | Increment 1 — socle publication | `schema.prisma` : enums + modèles `SocialAccount`, `SocialAccountCapability`, `Publication`, `PublicationTarget`, `PublicationAttempt`, `SocialWebhookEvent` ; migrations `add_social_publishing` + `social_publishing_rls` ; permissions `SOCIAL_PERMISSIONS` / `PUBLISHING_PERMISSIONS` ; modules API `social` et `publishing` (CRUD + transitions de statut, **sans** OAuth/adaptateurs/scheduler — increments suivants) |
 | 2026-09-07 | Increment 2 — moteur de publication | Migration `publication_published_at` (colonne `publications.publishedAt`). `publishing/adapters/` : interface `NetworkAdapter` + `PublishError` + `FakeNetworkAdapter` (jetons de légende `[[fail]]` `[[flaky]]` `[[draft]]` `[[manual]]`) + `AdapterRegistry`. `PublisherService` : réclamation atomique des cibles dues (`FOR UPDATE SKIP LOCKED` via `PlatformPrismaService`, cross-tenant), fallback par capacité (`EXPIRED`/`MANUAL`/`UNVERIFIED` → `ACTION_REQUISE`), retries (backoff 30 s / 120 s, 3 tentatives) → `FAILED`, `PublicationAttempt` à chaque essai, roll-up publication `PUBLISHED` quand toutes les cibles le sont, ré-armement des cibles coincées en `PUBLISHING` > 10 min. `PublishSchedulerService` : `@Cron` toutes les 30 s, désactivable par `PUBLISH_SCHEDULER_ENABLED=false`. Endpoints `POST /publishing/publications/:id/publish-now` et `POST /publishing/targets/:targetId/run` (perm `publishing.publish_now`) pour traitement immédiat. Transport = polling SQL ; **BullMQ / worker dédié = swap ultérieur** derrière la même interface. Toujours **pas d'OAuth ni d'adaptateurs réseaux réels**. |
 | 2026-09-07 | Increment 3 — OAuth Meta + adaptateur | `core/crypto` : `TokenCipherService` (AES-256-GCM, clé `TOKEN_ENCRYPTION_KEY`, passthrough si absente) + `CryptoModule` global. `social/meta/` : `MetaOAuthService` + `MetaOAuthController` — `GET /social/meta/connect?companyId=` (redirige vers le dialogue Facebook, contexte tenant/client dans un `state` JWT signé, TTL 10 min) et `GET /social/meta/callback` (`@Public`, échange code → jeton long-lived → `GET /me/accounts` → upsert `SocialAccount` FACEBOOK + INSTAGRAM avec jetons chiffrés ; capacité par défaut `UNVERIFIED`). `publishing/adapters/meta.adapter.ts` : `MetaAdapter` (IG : media container → poll → publish ; FB Page : `/feed` `/photos` `/videos`) ; erreur Graph code 190 → `TOKEN_INVALID` → le `PublisherService` bascule la capacité en `EXPIRED`. `AdapterRegistry` : `MetaAdapter` pour IG/FB si `META_APP_ID`+`META_APP_SECRET` présents, sinon `FakeNetworkAdapter`. Nouveaux env : `WEB_APP_URL`, `TOKEN_ENCRYPTION_KEY`, `META_*`. **Limite V1** : Instagram exige une URL média publique — seuls les `mediaIds` déjà en http(s) sont exploités (pipeline d'hébergement média à venir). **Non testable** tant que `META_APP_SECRET` + tunnel HTTPS absents. Pages web `apps/web/src/app/confidentialite` et `/cgu` (RGPD, suppression de données) — à déployer pour débloquer la vérification de domaine TikTok et l'App Review Meta. |
+| 2026-09-08 | Increment 9 — import de médias dans le composeur | Le composeur `/dashboard/posts/nouveau` a maintenant une **zone glisser-déposer + sélecteur de fichiers** (upload via `POST /marketing/media` — pipeline existant, va sur le bucket S3/R2 configuré) et un panneau **« Choisir dans la bibliothèque »** (`GET /marketing/media`). Le post porte des **ids de `MediaAsset`** (`create-post.dto` : `mediaUrls` → `mediaIds`, accepte ids ou URLs). Résolution à la publication : `publishing/media-link.service.ts` — `MediaLinkService.resolve(mediaIds, tenantId)` → URLs via `StorageService.getPublicUrl(key)` (nouveau : `MEDIA_PUBLIC_BASE` ou `S3_ENDPOINT/bucket/key`). `PublisherService` résout avant d'appeler l'adaptateur. Fix lint pré-existant `LocalDiskDriver.readStream`. |
+| 2026-09-08 | Increment 8 — simplification UX + thème sombre « futuriste » | Audit : trop de destinations, modèle publication→cible exposé, jargon. Refonte : `globals.css` en thème sombre (encre bleu-nuit, accent indigo `#6d5efc`, appoint cyan) + utilitaires `.glass` `.glow` `.gradient-text` `.brand-fill` `.dotgrid` `.input` — tout l'app suit via les tokens. Menu réduit : Général · Clients · Contenus (Posts, Bibliothèque, Campagnes) · Réglages. Shell refait (sidebar glass, bouton **＋ Créer un post** dans le header). Nouvelle page **`/dashboard/posts`** (liste unique, statut simple Brouillon/Programmé/Publié/Attention) + **`/dashboard/posts/nouveau`** (composeur une colonne : client → réseaux cochés → texte + ✨ hashtags → média → maintenant/programmer). Backend : `POST /publishing/posts` (un appel : crée `Publication` + `PublicationTarget[]` pour les réseaux connectés, publie ou programme, renvoie `skipped[]`). Anciens écrans `social/pipeline` et `social/accounts` conservés, réseul `accounts` reste dans le menu. Titre app → « Iniciativas Content ». |
+| 2026-09-08 | Increment 7 — générateur de hashtags IA | `POST /ai/hashtags` (`{ topic, network?, count? }` → `{ hashtags: string[] }`), un appel Claude Haiku non streamé, sortie nettoyée (sans `#`, minuscules, dédupliquée). Bouton **« ✨ Générer »** à côté du champ hashtags dans l'éditeur de cible (`/dashboard/social/pipeline`) : utilise la légende comme sujet + le réseau du compte sélectionné. |
+| 2026-09-08 | Increment 6 — recentrage « Iniciativas Content » (réversible) | `app.module.ts` : ne charge plus `BillingModule`, `ProjectsModule`, `DocumentsModule`, `PlanningModule`, `WhatsAppModule`, `SubcontractorsModule`, `PortalModule`, `ReportingModule` (code conservé dans le dépôt, réactivation = ré-ajouter l'import). `AutomationModule` reste (dépendance de `CrmModule`). Menu web `dashboard/layout.tsx` réduit à : Général (Tableau de bord, Assistant IA) · Clients · Contenus (Bibliothèque, Calendrier éditorial, Campagnes) · Réseaux sociaux · Administration (Équipe). Aucune table supprimée, aucune migration. |
+| 2026-09-08 | Increment 5 — UI web (Réseaux) | Section de nav « Réseaux sociaux ». **`/dashboard/social/accounts`** (E-06) : liste des comptes par client, pastille de capacité, boutons « Connecter Instagram/Facebook » et « Connecter TikTok » (appel `GET /social/{provider}/connect` → `{ url }` → `window.location`), `<select>` de capacité (`PUT /social/accounts/:id/capability`), Reconnecter, Révoquer, bannière de retour OAuth. **`/dashboard/social/pipeline`** (E-14 + E-15) : création de publication, ajout de cibles réseau par publication (compte + légende + hashtags + URLs média), statut par cible + `lastError` + nb de tentatives, boutons Programmer / Publier maintenant / Réessayer une cible / supprimer. Backend : les endpoints `connect` renvoient désormais `{ url }` (JSON) au lieu d'une redirection ; le callback OAuth renvoie vers `/dashboard/social/accounts`. `apps/web/src/lib/api.ts` : ajout de `api.put`. `apps/web/src/lib/types.ts` : types `SocialAccount`, `Publication`, `PublicationTarget`, etc. **Non testable end-to-end** sans API lancée + secrets + tunnel. |
+| 2026-09-08 | Increment 4 — OAuth TikTok + adaptateur | `social/tiktok/` : `TikTokOAuthService` + `TikTokOAuthController` — `GET /social/tiktok/connect?companyId=` + `GET /social/tiktok/callback` (`@Public`, `state` JWT). Échange code (`/v2/oauth/token/`) → `open_id` + access/refresh tokens → `user/info` pour le `display_name` → upsert `SocialAccount` TIKTOK (jetons chiffrés) ; capacité par défaut `DRAFT_ONLY` (app non auditée). `social/social-token.service.ts` : `SocialTokenService.ensureFreshAccessToken(account)` — rafraîchit le jeton TikTok (~24 h) via `refresh_token` avant chaque publication et le repersiste ; Meta = renvoie le jeton stocké ; échec → capacité `EXPIRED`. `PublisherService` utilise ce service au lieu de déchiffrer directement. `publishing/adapters/tiktok.adapter.ts` : `TikTokAdapter` (Content Posting API) — capacité `AUTO_PUBLISH` → publication directe (`/post/publish/video|content/init/`, `PUBLISHED`) ; sinon → dépôt boîte de réception (`/post/publish/inbox/video/init/`, `DRAFT_CREATED`). Erreur `access_token_invalid`/`scope_not_authorized` → `TOKEN_INVALID` → `EXPIRED`. `AdapterRegistry` : `TikTokAdapter` si `TIKTOK_CLIENT_KEY`+`TIKTOK_CLIENT_SECRET`, sinon Fake. `PublishingModule` importe désormais `SocialModule`. **Limites V1** : média = URL publique uniquement ; photo TikTok en boîte de réception non gérée ; publication directe non testable avant audit + vérif domaine PULL_FROM_URL. **Non testable** sans `TIKTOK_CLIENT_SECRET` + tunnel HTTPS. |
