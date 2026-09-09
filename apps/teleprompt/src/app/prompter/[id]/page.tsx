@@ -441,7 +441,14 @@ export default function PrompterPage() {
           break;
         case "r":
         case "R":
-          if (studioMode) onRecordToggle();
+          if (!studioMode) break;
+          // Shift+R finalise l'enregistrement (passe à la relecture) ;
+          // R seul bascule enregistrement ⇄ pause.
+          if (e.shiftKey && (recordingState === "recording" || recordingState === "paused")) {
+            finishRecording();
+          } else {
+            onRecordToggle();
+          }
           break;
         case "Escape":
           if (document.fullscreenElement) document.exitFullscreen();
@@ -450,7 +457,7 @@ export default function PrompterPage() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [togglePlay, seekRelative, toggleMirror, toggleFullscreen, studioMode, onRecordToggle, settings, updateSettings]);
+  }, [togglePlay, seekRelative, toggleMirror, toggleFullscreen, studioMode, onRecordToggle, finishRecording, recordingState, settings, updateSettings]);
 
   // Manual drag / swipe scroll
   const dragState = useRef<{ lastY: number } | null>(null);
@@ -566,6 +573,7 @@ export default function PrompterPage() {
           onToggleFullscreen={toggleFullscreen}
           onToggleStudio={toggleStudio}
           onRecordToggle={onRecordToggle}
+          onFinishRecording={finishRecording}
           onToggleSmartFollow={toggleSmartFollow}
         />
       )}

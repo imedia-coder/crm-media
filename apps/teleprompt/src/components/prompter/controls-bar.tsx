@@ -38,6 +38,7 @@ export function ControlsBar({
   onToggleFullscreen,
   onToggleStudio,
   onRecordToggle,
+  onFinishRecording,
   onToggleSmartFollow,
 }: {
   visible: boolean;
@@ -58,6 +59,7 @@ export function ControlsBar({
   onToggleFullscreen: () => void;
   onToggleStudio: () => void;
   onRecordToggle: () => void;
+  onFinishRecording: () => void;
   onToggleSmartFollow: () => void;
 }) {
   return (
@@ -166,14 +168,38 @@ export function ControlsBar({
         {studioMode && (
           <button
             onClick={onRecordToggle}
-            aria-label={recordingState === "recording" ? "Arrêter" : "Enregistrer"}
+            aria-label={
+              recordingState === "recording"
+                ? "Mettre l'enregistrement en pause"
+                : recordingState === "paused"
+                  ? "Reprendre l'enregistrement"
+                  : "Démarrer l'enregistrement"
+            }
+            title={
+              recordingState === "recording"
+                ? "Pause (l'enregistrement continue, cliquez sur Terminer pour finaliser)"
+                : recordingState === "paused"
+                  ? "Reprendre l'enregistrement"
+                  : "Démarrer l'enregistrement"
+            }
             className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-white"
           >
-            {recordingState === "recording" || recordingState === "paused" ? (
-              <StopIcon className="h-4 w-4 text-destructive" />
+            {recordingState === "recording" ? (
+              <PauseIcon className="h-4 w-4 text-white" />
             ) : (
               <RecordIcon className="h-6 w-6 text-destructive" />
             )}
+          </button>
+        )}
+
+        {studioMode && (recordingState === "recording" || recordingState === "paused") && (
+          <button
+            onClick={onFinishRecording}
+            aria-label="Terminer l'enregistrement et voir la relecture"
+            title="Terminer l'enregistrement et passer à la relecture"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-destructive text-white"
+          >
+            <StopIcon className="h-4 w-4" />
           </button>
         )}
 
