@@ -161,6 +161,10 @@ export default function PrompterPage() {
   }, [playing]);
 
   useEffect(() => {
+    // Synchronisation deliberee avec un minuteur externe (hideTimerRef), pas
+    // un calcul derivable au rendu : a chaque changement de `playing`, on
+    // reaffiche les controles et on relance le minuteur d'auto-masquage.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     revealControls();
     return () => {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);

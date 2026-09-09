@@ -67,6 +67,12 @@ export default function EditorPage() {
         setSaving(true);
         await saveScript(next);
         setSaving(false);
+        // Pas un appel pendant le rendu : cette closure ne s'execute que de
+        // façon asynchrone, apres le delai du debounce, en reponse a la
+        // saisie de l'utilisateur (voir `update` plus bas) — faux positif de
+        // react-hooks/purity, qui ne distingue pas ce cas d'un appel direct
+        // dans le corps du composant.
+        // eslint-disable-next-line react-hooks/purity
         setSavedAt(Date.now());
       }, 600),
     [],

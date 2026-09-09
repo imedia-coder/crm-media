@@ -1,0 +1,45 @@
+name: CI (teleprompt)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/teleprompt/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/teleprompt-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/teleprompt/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/teleprompt-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Version de pnpm lue depuis le champ "packageManager" du package.json
+      # racine (pnpm@11.16.0), pas de version fixée en dur ici.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Installer les dépendances (monorepo pnpm — lockfile unique à la racine)
+        run: pnpm install --frozen-lockfile
+
+      # teleprompt ne dépend d'aucun package du workspace (packages/*) : pas
+      # besoin de builder autre chose avant de le vérifier isolément.
+      - name: Vérification des types
+        run: pnpm --filter teleprompt exec tsc --noEmit
+
+      - name: Lint
+        run: pnpm --filter teleprompt run lint
+
+      - name: Build
+        run: pnpm --filter teleprompt run build
