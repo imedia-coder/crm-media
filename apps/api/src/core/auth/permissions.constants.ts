@@ -61,6 +61,24 @@ export const WHATSAPP_PERMISSIONS = {
   CONVERSATIONS_WRITE: 'whatsapp.conversations.write',
 } as const;
 
+export const SUBCONTRACTOR_PERMISSIONS = {
+  SUBCONTRACTORS_READ: 'subcontractors.subcontractors.read',
+  SUBCONTRACTORS_WRITE: 'subcontractors.subcontractors.write',
+} as const;
+
+export const SOCIAL_PERMISSIONS = {
+  ACCOUNTS_READ: 'social.accounts.read',
+  ACCOUNTS_CONNECT: 'social.accounts.connect',
+  ACCOUNTS_DISCONNECT: 'social.accounts.disconnect',
+} as const;
+
+export const PUBLISHING_PERMISSIONS = {
+  TARGETS_READ: 'publishing.targets.read',
+  TARGETS_WRITE: 'publishing.targets.write',
+  SCHEDULE: 'publishing.schedule',
+  PUBLISH_NOW: 'publishing.publish_now',
+} as const;
+
 export const MARKETING_PERMISSIONS = {
   CONTENT_READ: 'marketing.content.read',
   CONTENT_WRITE: 'marketing.content.write',

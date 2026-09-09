@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './core/auth/auth.module';
+import { CryptoModule } from './core/crypto/crypto.module';
 import { NotificationsModule } from './core/notifications/notifications.module';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { RetentionModule } from './core/retention/retention.module';
@@ -11,41 +12,39 @@ import { StorageModule } from './core/storage/storage.module';
 import { TenancyModule } from './core/tenancy/tenancy.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AutomationModule } from './modules/automation/automation.module';
-import { BillingModule } from './modules/billing/billing.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
-import { DocumentsModule } from './modules/documents/documents.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
-import { PlanningModule } from './modules/planning/planning.module';
-import { PortalModule } from './modules/portal/portal.module';
-import { ProjectsModule } from './modules/projects/projects.module';
-import { ReportingModule } from './modules/reporting/reporting.module';
+import { PublishingModule } from './modules/publishing/publishing.module';
+import { SocialModule } from './modules/social/social.module';
 import { UsersModule } from './modules/users/users.module';
-import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
 
+/**
+ * Périmètre "Iniciativas Content" (voir docs/VISION-INICIATIVAS-CONTENT.md).
+ * Les modules hors périmètre restent dans le dépôt mais ne sont plus chargés :
+ * billing, projects, documents, planning, whatsapp, subcontractors, portal,
+ * reporting. Réactivation = ré-ajouter l'import ici.
+ * AutomationModule reste chargé car CrmModule en dépend (deals.service).
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     PrismaModule,
+    CryptoModule,
     StorageModule,
     TenancyModule,
     NotificationsModule,
     AuthModule,
     CrmModule,
-    ProjectsModule,
-    DocumentsModule,
-    BillingModule,
-    PortalModule,
-    PlanningModule,
     DashboardModule,
     MarketingModule,
-    ReportingModule,
     UsersModule,
     RetentionModule,
     AiModule,
     AutomationModule,
-    WhatsAppModule,
+    SocialModule,
+    PublishingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,31 +1,34 @@
 @import "tailwindcss";
 
 /*
- * Design system source: skill "ui-ux-pro-max", product type "CRM & Client
- * Management" (data/products.csv row 101 + data/colors.csv row 101) —
- * Flat Design + Soft UI Evolution accents, professional blue + deal green,
- * "Minimal Swiss" typography (Inter) recommended for dashboards/admin panels.
+ * Iniciativas Content — thème sombre "futuriste".
+ * Palette : encre bleu-nuit, accent indigo électrique, appoint cyan.
+ * Tous les composants passent par ces variables (bg-card, text-foreground,
+ * border-border, bg-primary…), donc changer les valeurs ici suffit à
+ * reskinner toute l'app.
  */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
+  --background: #0a0a14;
+  --foreground: #e9e9f4;
+  --card: #12131f;
+  --card-foreground: #e9e9f4;
+  --primary: #6d5efc;
+  --primary-hover: #7f72ff;
   --primary-foreground: #ffffff;
-  --secondary: #3b82f6;
-  --secondary-foreground: #ffffff;
-  --accent: #059669;
-  --accent-hover: #047857;
-  --accent-foreground: #ffffff;
-  --muted: #f1f5fd;
-  --muted-foreground: #64748b;
-  --border: #e4ecfc;
-  --destructive: #dc2626;
-  --destructive-hover: #b91c1c;
+  --secondary: #22d3ee;
+  --secondary-foreground: #04121a;
+  --accent: #34d399;
+  --accent-hover: #10b981;
+  --accent-foreground: #04140d;
+  --muted: #1a1b29;
+  --muted-foreground: #8a8ca6;
+  --border: #262738;
+  --destructive: #f43f5e;
+  --destructive-hover: #e11d48;
   --destructive-foreground: #ffffff;
-  --ring: #2563eb;
+  --ring: #6d5efc;
+
+  --gradient-brand: linear-gradient(135deg, #6d5efc 0%, #22d3ee 100%);
 }
 
 @theme inline {
@@ -52,14 +55,126 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  color-scheme: dark;
+}
+
 body {
-  background: var(--background);
+  background:
+    radial-gradient(
+      60rem 40rem at 50% -12rem,
+      color-mix(in srgb, var(--primary) 14%, transparent),
+      transparent 70%
+    ),
+    var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Soft UI Evolution: visible, on-brand focus ring for keyboard nav (WCAG) */
 :focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+/* Barre de défilement discrète */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* ---------- utilitaires "futuristes" ---------- */
+
+.glass {
+  background: color-mix(in srgb, var(--card) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border);
+}
+
+.glow {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--primary) 45%, transparent),
+    0 10px 40px -8px color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+.glow-soft {
+  box-shadow: 0 8px 30px -10px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.brand-fill {
+  background: var(--gradient-brand);
+}
+
+.gradient-text {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gradient-border {
+  position: relative;
+  background: var(--card);
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--gradient-brand);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  border-radius: 0.6rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 60%, transparent);
+  padding: 0.55rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.input::placeholder {
+  color: color-mix(in srgb, var(--muted-foreground) 80%, transparent);
+}
+
+.dotgrid {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in srgb, var(--foreground) 7%, transparent) 1px,
+    transparent 0
+  );
+  background-size: 30px 30px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }

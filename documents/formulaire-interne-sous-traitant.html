@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Formulaire sous-traitant — Usage interne — INITIATIVAS MEDIA</title>
+<style>
+  :root {
+    --accent: #1c5296;
+    --accent-dark: #123a6e;
+    --bg: #f3f5f8;
+    --panel: #ffffff;
+    --border: #d5dbe3;
+    --field-bg: #f8fafc;
+    --text: #202430;
+    --label: #4a5164;
+    --danger: #b3261e;
+    --ok: #1b7a3d;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .private-banner {
+    background: #fff4e5;
+    color: #7a4a00;
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0c987;
+    letter-spacing: 0.02em;
+  }
+
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+
+  header.page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 3px solid var(--accent);
+    padding-bottom: 14px;
+    margin-bottom: 26px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .brand {
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    font-size: 13px;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 4px 0 2px;
+    font-size: 26px;
+    color: var(--text);
+  }
+
+  h1 span {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-top: 2px;
+  }
+
+  .meta {
+    font-size: 12px;
+    color: var(--label);
+    text-align: right;
+  }
+
+  fieldset {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--panel);
+    margin: 0 0 20px;
+    padding: 0 20px 18px;
+    box-shadow: 0 1px 2px rgba(20, 30, 60, 0.04);
+    break-inside: avoid;
+  }
+
+  legend {
+    font-weight: 700;
+    color: #fff;
+    background: var(--accent);
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 13.5px;
+    letter-spacing: 0.02em;
+    margin-left: -4px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 18px;
+    margin-top: 14px;
+  }
+
+  .grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .full { grid-column: 1 / -1; }
+  .w-narrow { grid-column: span 1; }
+
+  label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--label);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 5px;
+  }
+
+  .hint {
+    font-weight: 400;
+    text-transform: none;
+    color: #8a8f9c;
+    font-size: 10.5px;
+    letter-spacing: 0;
+  }
+
+  input[type="text"],
+  input[type="date"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  textarea {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--field-bg);
+    font-size: 13.5px;
+    color: var(--text);
+    font-family: inherit;
+  }
+
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(28, 82, 150, 0.12);
+  }
+
+  textarea { resize: vertical; min-height: 70px; }
+
+  .yesno-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 10px 0;
+    border-top: 1px dashed var(--border);
+  }
+
+  .grid > .yesno-row:first-of-type,
+  .full.yesno-row {
+    border-top: none;
+  }
+
+  .yesno-row .q {
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .yesno-options {
+    display: flex;
+    gap: 18px;
+    flex-shrink: 0;
+  }
+
+  .yesno-options label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: none;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--text);
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .yesno-options input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .signature-box {
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    height: 90px;
+    background: var(--field-bg);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    color: #9aa1ad;
+    font-size: 11.5px;
+    padding-bottom: 8px;
+  }
+
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(243, 245, 248, 0.94);
+    backdrop-filter: blur(4px);
+    padding: 12px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 7px;
+    padding: 9px 16px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--accent-dark); }
+
+  .btn-secondary {
+    background: #fff;
+    color: var(--text);
+    border-color: var(--border);
+  }
+  .btn-secondary:hover { background: #eef1f5; }
+
+  #save-status {
+    align-self: center;
+    font-size: 11.5px;
+    color: var(--ok);
+    margin-right: auto;
+    padding-left: 20px;
+    min-height: 1em;
+  }
+
+  footer.page-foot {
+    text-align: center;
+    font-size: 11px;
+    color: #9aa1ad;
+    margin-top: 30px;
+  }
+
+  @media (max-width: 640px) {
+    .grid, .grid.cols-3 { grid-template-columns: 1fr; }
+    .meta { text-align: left; }
+  }
+
+  @media print {
+    .private-banner, .toolbar { display: none !important; }
+    body { background: #fff; }
+    .wrap { max-width: 100%; padding: 0; }
+    fieldset { box-shadow: none; border: 1px solid #b9c0cc; }
+    input, textarea { background: #fff !important; border-color: #9aa1ad; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="private-banner">🔒 Document interne confidentiel — INITIATIVAS MEDIA — ne pas diffuser en dehors de l'entreprise</div>
+
+  <div class="toolbar">
+    <span id="save-status"></span>
+    <button type="button" class="btn-secondary" id="reset-btn">Réinitialiser</button>
+    <button type="button" class="btn-primary" id="print-btn">🖨️ Imprimer / Enregistrer en PDF</button>
+  </div>
+
+  <div class="wrap">
+    <header class="page-head">
+      <div>
+        <div class="brand">Initiativas Media</div>
+        <h1>Formulaire de renseignements<span>Sous-traitant — usage interne</span></h1>
+      </div>
+      <div class="meta">
+        À remplir par un membre de l'équipe<br />
+        Les champs sont sauvegardés automatiquement dans ce navigateur
+      </div>
+    </header>
+
+    <form id="sous-traitant-form" autocomplete="off">
+
+      <fieldset>
+        <legend>1. Identité du sous-traitant</legend>
+        <div class="grid">
+          <div><label>Nom</label><input type="text" name="nom" /></div>
+          <div><label>Prénom</label><input type="text" name="prenom" /></div>
+          <div class="full"><label>Adresse (n°, rue)</label><input type="text" name="adresse_perso" /></div>
+          <div><label>Code postal</label><input type="text" name="cp_perso" /></div>
+          <div><label>Ville</label><input type="text" name="ville_perso" /></div>
+          <div><label>Téléphone</label><input type="tel" name="tel_perso" /></div>
+          <div><label>Email</label><input type="email" name="email_perso" /></div>
+          <div><label>N° carte d'identité / passeport</label><input type="text" name="cni_numero" /></div>
+          <div><label>Date de validité</label><input type="date" name="cni_validite" /></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>2. Identification de l'entreprise</legend>
+        <div class="grid">
+          <div class="full"><label>Raison sociale</label><input type="text" name="raison_sociale" /></div>
+          <div><label>Forme juridique <span class="hint">(SARL, auto-entrepreneur…)</span></label><input type="text" name="forme_juridique" /></div>
+          <div><label>N° SIRET / SIREN</label><input type="text" name="siret" /></div>
+          <div class="full"><label>N° TVA intracommunautaire</label><input type="text" name="tva" /></div>
+          <div class="full"><label>Adresse du siège social</label><input type="text" name="adresse_entreprise" /></div>
+          <div><label>Code postal</label><input type="text" name="cp_entreprise" /></div>
+          <div><label>Ville</label><input type="text" name="ville_entreprise" /></div>
+          <div><label>Téléphone entreprise</label><input type="tel" name="tel_entreprise" /></div>
+          <div><label>Email entreprise</label><input type="email" name="email_entreprise" /></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>3. Coordonnées bancaires</legend>
+        <div class="grid">
+          <div class="full"><label>Titulaire du compte</label><input type="text" name="titulaire_compte" /></div>
+          <div class="full"><label>Nom de la banque</label><input type="text" name="nom_banque" /></div>
+          <div><label>IBAN</label><input type="text" name="iban" /></div>
+          <div><label>BIC / SWIFT</label><input type="text" name="bic" /></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>4. Assurances</legend>
+        <div class="grid">
+          <div class="full"><label>Compagnie d'assurance</label><input type="text" name="assurance_compagnie" /></div>
+          <div><label>N° de police</label><input type="text" name="assurance_police" /></div>
+          <div><label>Date de validité de l'attestation</label><input type="date" name="assurance_validite" /></div>
+        </div>
+        <div class="yesno-row full">
+          <span class="q">Assurance responsabilité civile professionnelle souscrite</span>
+          <span class="yesno-options">
+            <label><input type="radio" name="rc_pro" value="oui" /> Oui</label>
+            <label><input type="radio" name="rc_pro" value="non" /> Non</label>
+          </span>
+        </div>
+        <div class="yesno-row full">
+          <span class="q">Assurance décennale souscrite (si applicable)</span>
+          <span class="yesno-options">
+            <label><input type="radio" name="decennale" value="oui" /> Oui</label>
+            <label><input type="radio" name="decennale" value="non" /> Non</label>
+          </span>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>5. Détails de la prestation</legend>
+        <div class="grid">
+          <div class="full"><label>Type de prestation / spécialité</label><input type="text" name="type_prestation" /></div>
+          <div><label>Taux journalier (TJM) ou tarif</label><input type="text" name="tarif" /></div>
+          <div><label>Zone d'intervention</label><input type="text" name="zone_intervention" /></div>
+          <div class="full"><label>Disponibilité (date de début possible)</label><input type="date" name="disponibilite" /></div>
+          <div class="full">
+            <label>Références / expérience <span class="hint">(facultatif)</span></label>
+            <textarea name="references" rows="3"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Signature</legend>
+        <div class="grid">
+          <div><label>Fait à</label><input type="text" name="fait_a" /></div>
+          <div><label>Le</label><input type="date" name="fait_le" /></div>
+          <div class="full">
+            <label>Signature du sous-traitant <span class="hint">(précédée de la mention « Lu et approuvé », après impression)</span></label>
+            <div class="signature-box">Signature manuscrite après impression</div>
+          </div>
+        </div>
+      </fieldset>
+
+    </form>
+
+    <footer class="page-foot">
+      Initiativas Media — document interne confidentiel — ne pas diffuser en dehors de l'entreprise
+    </footer>
+  </div>
+
+<script>
+  (function () {
+    var STORAGE_KEY = 'im-formulaire-sous-traitant-v1';
+    var form = document.getElementById('sous-traitant-form');
+    var status = document.getElementById('save-status');
+    var saveTimer = null;
+
+    function fieldsIn(form) {
+      return Array.prototype.slice.call(form.querySelectorAll('input, textarea'));
+    }
+
+    function serialize() {
+      var data = {};
+      fieldsIn(form).forEach(function (el) {
+        if (el.type === 'radio') {
+          if (el.checked) data[el.name] = el.value;
+        } else {
+          data[el.name] = el.value;
+        }
+      });
+      return data;
+    }
+
+    function restore() {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        var data = JSON.parse(raw);
+        fieldsIn(form).forEach(function (el) {
+          if (!(el.name in data)) return;
+          if (el.type === 'radio') {
+            el.checked = el.value === data[el.name];
+          } else {
+            el.value = data[el.name];
+          }
+        });
+      } catch (e) { /* ignore corrupt storage */ }
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(serialize()));
+      status.textContent = 'Enregistré dans ce navigateur ✓';
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function () { status.textContent = ''; }, 2500);
+    }
+
+    form.addEventListener('input', function () {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(save, 500);
+    });
+
+    document.getElementById('print-btn').addEventListener('click', function () {
+      save();
+      window.print();
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', function () {
+      if (!confirm('Effacer toutes les informations saisies dans ce formulaire ?')) return;
+      form.reset();
+      localStorage.removeItem(STORAGE_KEY);
+      status.textContent = 'Formulaire réinitialisé';
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(function () { status.textContent = ''; }, 2500);
+    });
+
+    restore();
+  })();
+</script>
+
+</body>
+</html>

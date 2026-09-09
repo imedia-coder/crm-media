@@ -1,7 +1,7 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-const ACCESS_TOKEN_KEY = 'crm_access_token';
-const REFRESH_TOKEN_KEY = 'crm_refresh_token';
+const ACCESS_TOKEN_KEY = "crm_access_token";
+const REFRESH_TOKEN_KEY = "crm_refresh_token";
 
 export class ApiError extends Error {
   constructor(
@@ -9,17 +9,17 @@ export class ApiError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
   }
 }
 
 export function getAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   return window.localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
 export function getRefreshToken(): string | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   return window.localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
@@ -35,8 +35,8 @@ export function clearTokens(): void {
 
 export function decodeJwt<T>(token: string): T | null {
   try {
-    const payload = token.split('.')[1];
-    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = token.split(".")[1];
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
     return JSON.parse(atob(normalized)) as T;
   } catch {
     return null;
@@ -66,15 +66,18 @@ async function doRefresh(): Promise<string | null> {
   if (!refreshToken) return null;
 
   const res = await fetch(`${API_URL}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refreshToken }),
   });
   if (!res.ok) {
     clearTokens();
     return null;
   }
-  const data = (await res.json()) as { accessToken: string; refreshToken: string };
+  const data = (await res.json()) as {
+    accessToken: string;
+    refreshToken: string;
+  };
   setTokens(data.accessToken, data.refreshToken);
   return data.accessToken;
 }
@@ -85,15 +88,21 @@ interface RequestOptions {
   skipAuth?: boolean;
 }
 
-async function request<T>(path: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+async function request<T>(
+  path: string,
+  options: RequestOptions = {},
+  isRetry = false,
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
   if (!options.skipAuth) {
     const token = getAccessToken();
     if (token) headers.Authorization = `Bearer ${token}`;
   }
 
   const res = await fetch(`${API_URL}${path}`, {
-    method: options.method ?? 'GET',
+    method: options.method ?? "GET",
     headers,
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
   });
@@ -117,9 +126,12 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
-    request<T>(path, { ...options, method: 'POST', body }),
-  patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body }),
-  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+    request<T>(path, { ...options, method: "POST", body }),
+  put: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: "PUT", body }),
+  patch: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: "PATCH", body }),
+  delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };
 
 export async function apiDownload(path: string): Promise<Blob> {
@@ -131,10 +143,13 @@ export async function apiDownload(path: string): Promise<Blob> {
   return res.blob();
 }
 
-export async function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+export async function apiUpload<T>(
+  path: string,
+  formData: FormData,
+): Promise<T> {
   const token = getAccessToken();
   const res = await fetch(`${API_URL}${path}`, {
-    method: 'POST',
+    method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   });
@@ -155,9 +170,9 @@ export async function streamChat(
 ): Promise<{ conversationId: string }> {
   const doRequest = (accessToken: string | null) =>
     fetch(`${API_URL}/ai/chat`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
       body: JSON.stringify(body),
@@ -174,7 +189,7 @@ export async function streamChat(
     throw new ApiError(res.status, errBody?.message ?? res.statusText);
   }
 
-  const conversationId = res.headers.get('X-Conversation-Id') ?? '';
+  const conversationId = res.headers.get("X-Conversation-Id") ?? "";
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   for (;;) {

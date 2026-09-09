@@ -1,4 +1,9 @@
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { createReadStream } from 'fs';
@@ -14,7 +19,8 @@ interface StorageDriver {
 
 /** Default driver: files on the local disk, namespaced by tenant. */
 class LocalDiskDriver implements StorageDriver {
-  private readonly root = process.env.STORAGE_ROOT ?? join(process.cwd(), 'storage');
+  private readonly root =
+    process.env.STORAGE_ROOT ?? join(process.cwd(), 'storage');
 
   async save(key: string, content: Buffer): Promise<void> {
     const path = this.resolve(key);
@@ -22,8 +28,8 @@ class LocalDiskDriver implements StorageDriver {
     await writeFile(path, content);
   }
 
-  async readStream(key: string): Promise<Readable> {
-    return createReadStream(this.resolve(key));
+  readStream(key: string): Promise<Readable> {
+    return Promise.resolve(createReadStream(this.resolve(key)));
   }
 
   async delete(key: string): Promise<void> {
@@ -58,16 +64,22 @@ class S3Driver implements StorageDriver {
   }
 
   async save(key: string, content: Buffer): Promise<void> {
-    await this.client.send(new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: content }));
+    await this.client.send(
+      new PutObjectCommand({ Bucket: this.bucket, Key: key, Body: content }),
+    );
   }
 
   async readStream(key: string): Promise<Readable> {
-    const result = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    const result = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
     return result.Body as Readable;
   }
 
   async delete(key: string): Promise<void> {
-    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+    await this.client.send(
+      new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
   }
 }
 
@@ -80,20 +92,50 @@ class S3Driver implements StorageDriver {
 @Injectable()
 export class StorageService {
   private readonly driver: StorageDriver =
-    process.env.STORAGE_DRIVER === 's3' ? new S3Driver() : new LocalDiskDriver();
+    process.env.STORAGE_DRIVER === 's3'
+      ? new S3Driver()
+      : new LocalDiskDriver();
 
   /**
    * `namespace` groups keys under a subfolder (e.g. a documentId, or just
    * "media" for the shared media library); `discriminator` disambiguates
    * within it (a document's version number, a timestamp, etc.).
    */
-  buildKey(tenantId: string, namespace: string, discriminator: string | number, originalName: string): string {
+  buildKey(
+    tenantId: string,
+    namespace: string,
+    discriminator: string | number,
+    originalName: string,
+  ): string {
     const ext = extname(originalName).slice(0, 20);
     return `${tenantId}/${namespace}/v${discriminator}-${randomUUID()}${ext}`;
   }
 
   save(key: string, content: Buffer): Promise<void> {
     return this.driver.save(key, content);
+  }
+
+  /**
+   * URL publiquement récupérable pour un objet (utilisée par les adaptateurs
+   * réseaux qui tirent le média depuis une URL — Meta, TikTok PULL_FROM_URL).
+   *
+   * Priorité : `MEDIA_PUBLIC_BASE` (ex. domaine public d'un bucket R2) → sinon
+   * l'URL d'objet S3 « endpoint/bucket/key » (suppose un bucket en lecture
+   * publique). Renvoie `null` si rien n'est exploitable (stockage disque
+   * local sans base publique) : l'appelant lèvera alors une erreur claire.
+   */
+  getPublicUrl(key: string): string | null {
+    const base = process.env.MEDIA_PUBLIC_BASE;
+    if (base) return `${base.replace(/\/$/, '')}/${key}`;
+
+    if (
+      process.env.STORAGE_DRIVER === 's3' &&
+      process.env.S3_ENDPOINT &&
+      process.env.S3_BUCKET
+    ) {
+      return `${process.env.S3_ENDPOINT.replace(/\/$/, '')}/${process.env.S3_BUCKET}/${key}`;
+    }
+    return null;
   }
 
   readStream(key: string): Promise<Readable> {

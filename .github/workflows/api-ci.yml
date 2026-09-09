@@ -65,20 +65,9 @@ jobs:
       # Sans --fix (contrairement au script `lint` du package.json, pensé
       # pour un usage local) : la CI doit echouer sur un vrai probleme, pas
       # le corriger silencieusement puis passer au vert quand meme.
-      #
-      # 3 fichiers temporairement exclus (storage.service.ts, ai.controller.ts,
-      # ai.service.ts) : leur dernier commit n'est pas encore reformate — ce
-      # sont des fichiers activement modifies par un autre chantier en cours
-      # au moment ou le lint a ete active ici, et les toucher aurait pollue
-      # ce travail non lie. A retirer de cette liste une fois ce chantier
-      # commite et son propre `pnpm run lint` passe dessus.
       - name: Lint
         working-directory: apps/api
-        run: >-
-          pnpm exec eslint "{src,apps,libs,test}/**/*.ts" --no-warn-ignored
-          --ignore-pattern "src/core/storage/storage.service.ts"
-          --ignore-pattern "src/modules/ai/ai.controller.ts"
-          --ignore-pattern "src/modules/ai/ai.service.ts"
+        run: pnpm exec eslint "{src,apps,libs,test}/**/*.ts"
 
       - name: Tests unitaires
         run: pnpm --filter api run test

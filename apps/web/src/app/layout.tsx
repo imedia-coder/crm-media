@@ -15,8 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CRM Media",
-  description: "Plateforme de gestion pour agences media",
+  title: "Iniciativas Content",
+  description:
+    "Gérer et publier automatiquement les contenus de plusieurs clients sur Instagram, TikTok et Facebook depuis une seule plateforme.",
 };
 
 export default function RootLayout({

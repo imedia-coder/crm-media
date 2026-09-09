@@ -2,14 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import Anthropic from '@anthropic-ai/sdk';
 import type { Response } from 'express';
 import { TenantPrismaService } from '../../core/tenancy/tenant-prisma.service';
+import { GenerateHashtagsDto } from './dto/generate-hashtags.dto';
 import { SendMessageDto } from './dto/send-message.dto';
 
 const MODEL = 'claude-opus-4-8';
+/** Génération courte et fréquente (hashtags…) — modèle rapide. */
+const FAST_MODEL = 'claude-haiku-4-5-20251001';
 
 const SYSTEM_PROMPT =
   "Tu es l'assistant IA intégré à crm MEDIA, une plateforme de gestion pour agences media/marketing. " +
   "Tu aides les membres de l'équipe interne à rédiger des emails et messages clients, résumer des informations, " +
-  "brainstormer des idées de contenu ou de campagne, et répondre à leurs questions de travail au quotidien. " +
+  'brainstormer des idées de contenu ou de campagne, et répondre à leurs questions de travail au quotidien. ' +
   'Réponds en français, de façon concise et directement exploitable, sauf si on te parle dans une autre langue.';
 
 @Injectable()
@@ -27,18 +30,90 @@ export class AiService {
   }
 
   async getConversation(id: string, userId: string) {
-    const conversation = await this.tenantPrisma.client.aiConversation.findUnique({
-      where: { id },
-      include: { messages: { orderBy: { createdAt: 'asc' } } },
-    });
+    const conversation =
+      await this.tenantPrisma.client.aiConversation.findUnique({
+        where: { id },
+        include: { messages: { orderBy: { createdAt: 'asc' } } },
+      });
     if (!conversation || conversation.userId !== userId) {
       throw new NotFoundException('Conversation not found');
     }
     return conversation;
   }
 
+  /**
+   * Génère une liste de hashtags pour un contenu réseaux sociaux. Un seul
+   * appel non streamé (sortie courte). Renvoie des hashtags nettoyés
+   * (sans « # », sans espace, en minuscules).
+   */
+  async generateHashtags(
+    dto: GenerateHashtagsDto,
+  ): Promise<{ hashtags: string[] }> {
+    const count = dto.count ?? 18;
+    const networkLine = dto.network
+      ? `Réseau ciblé : ${dto.network}. Adapte le style et le volume à ce réseau.`
+      : '';
+    const prompt = [
+      `Sujet / légende du contenu : "${dto.topic}".`,
+      networkLine,
+      `Propose ${count} hashtags pertinents, en mélangeant : hashtags larges, hashtags de niche,`,
+      `hashtags géographiques si le sujet s'y prête, et 1 ou 2 hashtags de marque.`,
+      `Réponds UNIQUEMENT par un tableau JSON de chaînes, sans « # », sans espace, en minuscules.`,
+      `Exemple de format : ["marketing","agencedigitale","capvert"]`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const response = await this.client.messages.create({
+      model: FAST_MODEL,
+      max_tokens: 500,
+      system:
+        'Tu génères des jeux de hashtags pour des publications de réseaux sociaux. ' +
+        'Tu réponds toujours par un tableau JSON de chaînes, rien d’autre.',
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+    const text = response.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
+
+    return { hashtags: this.parseHashtags(text).slice(0, count) };
+  }
+
+  private parseHashtags(text: string): string[] {
+    const clean = (raw: string) =>
+      raw
+        .trim()
+        .replace(/^#+/, '')
+        .replace(/[^\p{L}\p{N}_]/gu, '')
+        .toLowerCase();
+
+    const match = text.match(/\[[\s\S]*\]/);
+    if (match) {
+      try {
+        const arr = JSON.parse(match[0]) as unknown[];
+        const tags = arr.map((v) => clean(String(v))).filter(Boolean);
+        if (tags.length > 0) return [...new Set(tags)];
+      } catch {
+        // tombe sur le découpage ligne/virgule ci-dessous
+      }
+    }
+    return [
+      ...new Set(
+        text
+          .split(/[\s,\n]+/)
+          .map(clean)
+          .filter((t) => t.length > 1),
+      ),
+    ];
+  }
+
   async removeConversation(id: string, userId: string) {
-    const conversation = await this.tenantPrisma.client.aiConversation.findUnique({ where: { id } });
+    const conversation =
+      await this.tenantPrisma.client.aiConversation.findUnique({
+        where: { id },
+      });
     if (!conversation || conversation.userId !== userId) {
       throw new NotFoundException('Conversation not found');
     }
@@ -51,7 +126,11 @@ export class AiService {
    * a long output). The user's message and the full assistant reply are
    * persisted before/after the stream so history survives a page reload.
    */
-  async streamChat(dto: SendMessageDto, userId: string, res: Response): Promise<void> {
+  async streamChat(
+    dto: SendMessageDto,
+    userId: string,
+    res: Response,
+  ): Promise<void> {
     const tenantId = this.tenantPrisma.tenantId;
 
     const conversation = dto.conversationId
@@ -62,10 +141,17 @@ export class AiService {
         });
 
     await this.tenantPrisma.client.aiMessage.create({
-      data: { conversationId: conversation.id, role: 'USER', content: dto.message },
+      data: {
+        conversationId: conversation.id,
+        role: 'USER',
+        content: dto.message,
+      },
     });
 
-    const history = [...conversation.messages, { role: 'USER' as const, content: dto.message }].map((m) => ({
+    const history = [
+      ...conversation.messages,
+      { role: 'USER' as const, content: dto.message },
+    ].map((m) => ({
       role: m.role === 'USER' ? ('user' as const) : ('assistant' as const),
       content: m.content,
     }));
@@ -100,7 +186,11 @@ export class AiService {
     }
 
     await this.tenantPrisma.client.aiMessage.create({
-      data: { conversationId: conversation.id, role: 'ASSISTANT', content: fullText },
+      data: {
+        conversationId: conversation.id,
+        role: 'ASSISTANT',
+        content: fullText,
+      },
     });
     await this.tenantPrisma.client.aiConversation.update({
       where: { id: conversation.id },

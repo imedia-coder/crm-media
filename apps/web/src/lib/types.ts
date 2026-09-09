@@ -43,7 +43,8 @@ export interface Deal {
   stage?: PipelineStage;
 }
 
-export type ProjectStatus = 'PLANNED' | 'IN_PROGRESS' | 'ON_HOLD' | 'DONE' | 'ARCHIVED';
+export type ProjectStatus =
+  "PLANNED" | "IN_PROGRESS" | "ON_HOLD" | "DONE" | "ARCHIVED";
 
 export interface Project {
   id: string;
@@ -58,8 +59,8 @@ export interface Project {
   tasks?: { status: TaskStatus }[];
 }
 
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
-export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type TaskStatus = "TODO" | "IN_PROGRESS" | "IN_REVIEW" | "DONE";
+export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export interface Task {
   id: string;
@@ -128,7 +129,8 @@ export interface LineItem {
   vatRate: number | string;
 }
 
-export type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+export type QuoteStatus =
+  "DRAFT" | "SENT" | "ACCEPTED" | "DECLINED" | "EXPIRED";
 
 export interface Quote {
   id: string;
@@ -142,7 +144,7 @@ export interface Quote {
   createdAt: string;
 }
 
-export type InvoiceStatus = 'DRAFT' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+export type InvoiceStatus = "DRAFT" | "SENT" | "PAID" | "OVERDUE" | "CANCELLED";
 
 export interface Payment {
   id: string;
@@ -167,7 +169,7 @@ export interface Invoice {
   createdAt: string;
 }
 
-export type CampaignStatus = 'PLANNED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+export type CampaignStatus = "PLANNED" | "ACTIVE" | "COMPLETED" | "CANCELLED";
 
 export interface Campaign {
   id: string;
@@ -182,8 +184,15 @@ export interface Campaign {
   _count?: { contentItems: number };
 }
 
-export type ContentType = 'POST' | 'STORY' | 'REEL' | 'VIDEO' | 'ARTICLE' | 'NEWSLETTER' | 'OTHER';
-export type ContentStatus = 'DRAFT' | 'PENDING_VALIDATION' | 'VALIDATED' | 'REJECTED' | 'SCHEDULED' | 'PUBLISHED';
+export type ContentType =
+  "POST" | "STORY" | "REEL" | "VIDEO" | "ARTICLE" | "NEWSLETTER" | "OTHER";
+export type ContentStatus =
+  | "DRAFT"
+  | "PENDING_VALIDATION"
+  | "VALIDATED"
+  | "REJECTED"
+  | "SCHEDULED"
+  | "PUBLISHED";
 
 export interface ContentItem {
   id: string;
@@ -214,11 +223,11 @@ export interface MediaAsset {
 }
 
 export type NotificationType =
-  | 'TASK_ASSIGNED'
-  | 'QUOTE_ACCEPTED'
-  | 'INVOICE_PAID'
-  | 'CONTENT_VALIDATION_NEEDED'
-  | 'GENERIC';
+  | "TASK_ASSIGNED"
+  | "QUOTE_ACCEPTED"
+  | "INVOICE_PAID"
+  | "CONTENT_VALIDATION_NEEDED"
+  | "GENERIC";
 
 export interface RevenueMonth {
   month: string;
@@ -246,7 +255,7 @@ export interface ProjectProfitability {
   paidTotal: number;
 }
 
-export type UserStatus = 'ACTIVE' | 'INVITED' | 'DISABLED';
+export type UserStatus = "ACTIVE" | "INVITED" | "DISABLED";
 
 export interface TeamMember {
   id: string;
@@ -275,7 +284,7 @@ export interface Notification {
   createdAt: string;
 }
 
-export type AiMessageRole = 'USER' | 'ASSISTANT';
+export type AiMessageRole = "USER" | "ASSISTANT";
 
 export interface AiMessage {
   id: string;
@@ -295,28 +304,35 @@ export interface AiConversationWithMessages extends AiConversation {
   messages: AiMessage[];
 }
 
-export type AutomationTrigger = 'QUOTE_ACCEPTED' | 'INVOICE_PAID' | 'DEAL_WON';
+export type AutomationTrigger = "QUOTE_ACCEPTED" | "INVOICE_PAID" | "DEAL_WON";
 
 export interface CreateProjectActionConfig {
-  type: 'CREATE_PROJECT';
+  type: "CREATE_PROJECT";
   config: { nameTemplate: string };
 }
 
 export interface CreateTaskActionConfig {
-  type: 'CREATE_TASK';
-  config: { titleTemplate: string; useCreatedProject: boolean; projectId?: string };
+  type: "CREATE_TASK";
+  config: {
+    titleTemplate: string;
+    useCreatedProject: boolean;
+    projectId?: string;
+  };
 }
 
 export interface SendNotificationActionConfig {
-  type: 'SEND_NOTIFICATION';
+  type: "SEND_NOTIFICATION";
   config: { titleTemplate: string };
 }
 
-export type AutomationAction = CreateProjectActionConfig | CreateTaskActionConfig | SendNotificationActionConfig;
+export type AutomationAction =
+  | CreateProjectActionConfig
+  | CreateTaskActionConfig
+  | SendNotificationActionConfig;
 
 export interface AutomationRun {
   id: string;
-  status: 'SUCCESS' | 'FAILED';
+  status: "SUCCESS" | "FAILED";
   resultLog: string;
   createdAt: string;
 }
@@ -335,7 +351,7 @@ export interface AutomationRuleWithRuns extends AutomationRule {
   runs: AutomationRun[];
 }
 
-export type WhatsAppChannelStatus = 'PENDING' | 'CONNECTED' | 'ERROR';
+export type WhatsAppChannelStatus = "PENDING" | "CONNECTED" | "ERROR";
 
 export interface WhatsAppChannel {
   id: string;
@@ -347,8 +363,9 @@ export interface WhatsAppChannel {
   createdAt: string;
 }
 
-export type WhatsAppMessageDirection = 'INBOUND' | 'OUTBOUND';
-export type WhatsAppMessageStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
+export type WhatsAppMessageDirection = "INBOUND" | "OUTBOUND";
+export type WhatsAppMessageStatus =
+  "PENDING" | "SENT" | "DELIVERED" | "READ" | "FAILED";
 
 export interface WhatsAppMessage {
   id: string;
@@ -371,4 +388,138 @@ export interface WhatsAppConversation {
 
 export interface WhatsAppConversationWithMessages extends WhatsAppConversation {
   messages: WhatsAppMessage[];
+}
+
+export interface Subcontractor {
+  id: string;
+  firstName: string;
+  lastName: string;
+  personalAddress: string | null;
+  personalPostalCode: string | null;
+  personalCity: string | null;
+  personalPhone: string | null;
+  personalEmail: string | null;
+  idDocumentNumber: string | null;
+  idDocumentValidUntil: string | null;
+
+  companyName: string | null;
+  legalForm: string | null;
+  siret: string | null;
+  vatNumber: string | null;
+  companyAddress: string | null;
+  companyPostalCode: string | null;
+  companyCity: string | null;
+  companyPhone: string | null;
+  companyEmail: string | null;
+
+  bankAccountHolder: string | null;
+  bankName: string | null;
+  iban: string | null;
+  bic: string | null;
+
+  insuranceCompany: string | null;
+  insurancePolicyNumber: string | null;
+  insuranceValidUntil: string | null;
+  hasLiabilityInsurance: boolean | null;
+  hasTenYearInsurance: boolean | null;
+
+  serviceType: string | null;
+  dailyRate: string | null;
+  interventionZone: string | null;
+  availableFrom: string | null;
+  experienceNotes: string | null;
+
+  signedAt: string | null;
+  signedLocation: string | null;
+
+  createdAt: string;
+}
+
+export type CreateSubcontractorInput = Omit<
+  Subcontractor,
+  "id" | "createdAt" | "dailyRate"
+> & {
+  dailyRate?: number;
+};
+
+// ---------- Réseaux sociaux & publication ----------
+
+export type SocialNetwork = "INSTAGRAM" | "FACEBOOK" | "TIKTOK";
+export type SocialAccountStatus = "PENDING" | "CONNECTED" | "ERROR";
+export type SocialCapabilityKind =
+  "AUTO_PUBLISH" | "DRAFT_ONLY" | "MANUAL" | "UNVERIFIED" | "EXPIRED";
+
+export interface SocialAccountCapability {
+  capability: SocialCapabilityKind;
+  reason: string | null;
+  checkedAt: string;
+}
+
+export interface SocialAccount {
+  id: string;
+  companyId: string;
+  network: SocialNetwork;
+  externalId: string | null;
+  handle: string | null;
+  scopes: string[];
+  tokenExpiresAt: string | null;
+  status: SocialAccountStatus;
+  lastSyncAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  capability: SocialAccountCapability | null;
+}
+
+export type PublicationTargetStatus =
+  | "DRAFT"
+  | "SCHEDULED"
+  | "PUBLISHING"
+  | "PUBLISHED"
+  | "ACTION_REQUISE"
+  | "FAILED"
+  | "CANCELLED";
+export type PublicationTargetMode = "AUTO" | "DRAFT" | "MANUAL";
+export type PublicationAttemptOutcome = "OK" | "RETRY" | "FAILED";
+
+export interface PublicationAttempt {
+  id: string;
+  attemptNumber: number;
+  outcome: PublicationAttemptOutcome;
+  errorCode: string | null;
+  errorDetail: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
+export interface PublicationTarget {
+  id: string;
+  publicationId: string;
+  accountId: string;
+  network: SocialNetwork;
+  caption: string | null;
+  hashtags: string[];
+  mediaIds: string[];
+  status: PublicationTargetStatus;
+  mode: PublicationTargetMode;
+  scheduledAt: string | null;
+  externalPostId: string | null;
+  publishedAt: string | null;
+  lastError: string | null;
+  account?: { id: string; network: SocialNetwork; handle: string | null };
+  attempts?: PublicationAttempt[];
+}
+
+export interface Publication {
+  id: string;
+  companyId: string;
+  contentItemId: string | null;
+  campaignId: string | null;
+  title: string;
+  status: ContentStatus;
+  scheduledAt: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+  company?: { id: string; name: string };
+  campaign?: { id: string; name: string } | null;
+  targets: PublicationTarget[];
 }

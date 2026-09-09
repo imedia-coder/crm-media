@@ -20,25 +20,33 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users          User[]
-  roles          Role[]
-  companies      Company[]
-  contacts       Contact[]
-  pipelineStages PipelineStage[]
-  deals          Deal[]
-  projects       Project[]
-  documents      Document[]
-  quotes         Quote[]
-  invoices       Invoice[]
-  appointments   Appointment[]
-  campaigns      Campaign[]
-  contentItems   ContentItem[]
-  mediaAssets    MediaAsset[]
-  notifications  Notification[]
-  aiConversations AiConversation[]
-  automationRules AutomationRule[]
-  whatsappChannels WhatsAppChannel[]
+  users                 User[]
+  roles                 Role[]
+  companies             Company[]
+  contacts              Contact[]
+  pipelineStages        PipelineStage[]
+  deals                 Deal[]
+  projects              Project[]
+  documents             Document[]
+  quotes                Quote[]
+  invoices              Invoice[]
+  appointments          Appointment[]
+  campaigns             Campaign[]
+  contentItems          ContentItem[]
+  mediaAssets           MediaAsset[]
+  notifications         Notification[]
+  aiConversations       AiConversation[]
+  automationRules       AutomationRule[]
+  whatsappChannels      WhatsAppChannel[]
   whatsappConversations WhatsAppConversation[]
+  subcontractors        Subcontractor[]
+
+  socialAccounts           SocialAccount[]
+  socialAccountCapabilities SocialAccountCapability[]
+  publications              Publication[]
+  publicationTargets        PublicationTarget[]
+  publicationAttempts       PublicationAttempt[]
+  socialWebhookEvents       SocialWebhookEvent[]
 
   @@map("tenants")
 }
@@ -50,41 +58,42 @@ enum UserStatus {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  tenantId     String
-  tenant       Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  email        String
-  passwordHash String
-  firstName    String
-  lastName     String
-  status       UserStatus @default(INVITED)
-  mfaSecret    String?
-  mfaEnabledAt DateTime?
-  isClient     Boolean    @default(false)
-  companyId    String?
-  company      Company?   @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  roleId       String?
-  role         Role?      @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  id            String         @id @default(uuid())
+  tenantId      String
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email         String
+  passwordHash  String
+  firstName     String
+  lastName      String
+  status        UserStatus     @default(INVITED)
+  mfaSecret     String?
+  mfaEnabledAt  DateTime?
+  isClient      Boolean        @default(false)
+  companyId     String?
+  company       Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  roleId        String?
+  role          Role?          @relation(fields: [roleId], references: [id], onDelete: SetNull)
   refreshTokens RefreshToken[]
 
   // RGPD : droit à l'effacement pour un collaborateur qui quitte l'agence.
   // Voir UsersService.anonymize.
   anonymizedAt DateTime?
 
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  ownedDeals    Deal[]            @relation("DealOwner")
-  ownedProjects Project[]         @relation("ProjectManager")
-  assignedTasks Task[]            @relation("TaskAssignee")
-  timeEntries   TimeEntry[]
-  uploadedDocs  DocumentVersion[]
+  ownedDeals            Deal[]            @relation("DealOwner")
+  ownedProjects         Project[]         @relation("ProjectManager")
+  assignedTasks         Task[]            @relation("TaskAssignee")
+  timeEntries           TimeEntry[]
+  uploadedDocs          DocumentVersion[]
   organizedAppointments Appointment[]
-  authoredContent    ContentItem[] @relation("ContentAuthor")
-  validatedContent   ContentItem[] @relation("ContentValidator")
-  uploadedMedia      MediaAsset[]
-  notifications      Notification[]
-  aiConversations    AiConversation[]
+  authoredContent       ContentItem[]     @relation("ContentAuthor")
+  validatedContent      ContentItem[]     @relation("ContentValidator")
+  uploadedMedia         MediaAsset[]
+  notifications         Notification[]
+  aiConversations       AiConversation[]
+  createdSubcontractors Subcontractor[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -144,20 +153,23 @@ model Company {
   // RGPD : droit à l'effacement. Bloqué tant que des devis/factures existent
   // (obligation légale de conservation des documents comptables), voir
   // CompaniesService.anonymize.
-  anonymizedAt     DateTime?
+  anonymizedAt DateTime?
 
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  contacts    Contact[]
-  deals       Deal[]
-  projects    Project[]
+  contacts     Contact[]
+  deals        Deal[]
+  projects     Project[]
   quotes       Quote[]
   invoices     Invoice[]
   clientUsers  User[]
   appointments Appointment[]
   campaigns    Campaign[]
   contentItems ContentItem[]
+
+  socialAccounts SocialAccount[]
+  publications   Publication[]
 
   @@index([tenantId])
   @@map("companies")
@@ -176,15 +188,15 @@ model Contact {
 
   // RGPD : consentement au traitement des données (ex. prospection),
   // avec preuve (date + source) plutôt qu'un simple booléen.
-  marketingConsent  Boolean   @default(false)
-  consentGivenAt    DateTime?
-  consentSource     String?
-  anonymizedAt      DateTime?
+  marketingConsent Boolean   @default(false)
+  consentGivenAt   DateTime?
+  consentSource    String?
+  anonymizedAt     DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  deals Deal[]
+  deals                 Deal[]
   whatsappConversations WhatsAppConversation[]
 
   @@index([tenantId])
@@ -396,22 +408,22 @@ model DocumentVersion {
 // ---------- PLANNING ----------
 
 model Appointment {
-  id           String   @id @default(uuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  title        String
-  description  String?
-  startAt      DateTime
-  endAt        DateTime
-  location     String?
-  projectId    String?
-  project      Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  companyId    String?
-  company      Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  organizerId  String?
-  organizer    User?    @relation(fields: [organizerId], references: [id], onDelete: SetNull)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+  location    String?
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  organizerId String?
+  organizer   User?    @relation(fields: [organizerId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([tenantId])
   @@index([startAt])
@@ -428,22 +440,23 @@ enum CampaignStatus {
 }
 
 model Campaign {
-  id          String         @id @default(uuid())
-  tenantId    String
-  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name        String
-  companyId   String?
-  company     Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  objective   String?
-  status      CampaignStatus @default(PLANNED)
-  startDate   DateTime?
-  endDate     DateTime?
-  budget      Decimal?       @db.Decimal(14, 2)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id        String         @id @default(uuid())
+  tenantId  String
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  companyId String?
+  company   Company?       @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  objective String?
+  status    CampaignStatus @default(PLANNED)
+  startDate DateTime?
+  endDate   DateTime?
+  budget    Decimal?       @db.Decimal(14, 2)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   contentItems ContentItem[]
   mediaAssets  MediaAsset[]
+  publications Publication[]
 
   @@index([tenantId])
   @@map("campaigns")
@@ -469,30 +482,31 @@ enum ContentStatus {
 }
 
 model ContentItem {
-  id             String        @id @default(uuid())
-  tenantId       String
-  tenant         Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  title          String
-  body           String?
-  type           ContentType   @default(POST)
-  status         ContentStatus @default(DRAFT)
-  hashtags       String[]      @default([])
-  scheduledAt    DateTime?
-  publishedAt    DateTime?
-  companyId      String?
-  company        Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  campaignId     String?
-  campaign       Campaign?     @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  projectId      String?
-  project        Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  authorId       String?
-  author         User?         @relation("ContentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
-  validatedById  String?
-  validatedBy    User?         @relation("ContentValidator", fields: [validatedById], references: [id], onDelete: SetNull)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id            String        @id @default(uuid())
+  tenantId      String
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title         String
+  body          String?
+  type          ContentType   @default(POST)
+  status        ContentStatus @default(DRAFT)
+  hashtags      String[]      @default([])
+  scheduledAt   DateTime?
+  publishedAt   DateTime?
+  companyId     String?
+  company       Company?      @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  campaignId    String?
+  campaign      Campaign?     @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  projectId     String?
+  project       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  authorId      String?
+  author        User?         @relation("ContentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  validatedById String?
+  validatedBy   User?         @relation("ContentValidator", fields: [validatedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   mediaAssets MediaAsset[]
+  publications Publication[]
 
   @@index([tenantId])
   @@index([scheduledAt])
@@ -671,7 +685,7 @@ model QuoteLine {
   description String
   quantity    Decimal @db.Decimal(10, 2)
   unitPrice   Decimal @db.Decimal(14, 2)
-  vatRate     Decimal @db.Decimal(5, 2) @default(20)
+  vatRate     Decimal @default(20) @db.Decimal(5, 2)
 
   @@map("quote_lines")
 }
@@ -716,7 +730,7 @@ model InvoiceLine {
   description String
   quantity    Decimal @db.Decimal(10, 2)
   unitPrice   Decimal @db.Decimal(14, 2)
-  vatRate     Decimal @db.Decimal(5, 2) @default(20)
+  vatRate     Decimal @default(20) @db.Decimal(5, 2)
 
   @@map("invoice_lines")
 }
@@ -787,19 +801,19 @@ model WhatsAppChannel {
 }
 
 model WhatsAppConversation {
-  id            String               @id @default(uuid())
+  id            String          @id @default(uuid())
   tenantId      String
-  tenant        Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   channelId     String
-  channel       WhatsAppChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  channel       WhatsAppChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
   // Counterparty's number, normalized (digits only) — not the channel's own number.
   phoneNumber   String
   displayName   String?
   contactId     String?
-  contact       Contact?             @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contact       Contact?        @relation(fields: [contactId], references: [id], onDelete: SetNull)
   lastMessageAt DateTime?
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   messages WhatsAppMessage[]
 
@@ -822,4 +836,284 @@ model WhatsAppMessage {
 
   @@index([conversationId])
   @@map("whatsapp_messages")
+}
+
+// ---------- SOUS-TRAITANTS ----------
+
+model Subcontractor {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Identité de la personne
+  firstName            String
+  lastName             String
+  personalAddress      String?
+  personalPostalCode   String?
+  personalCity         String?
+  personalPhone        String?
+  personalEmail        String?
+  idDocumentNumber     String?
+  idDocumentValidUntil DateTime?
+
+  // Entreprise
+  companyName       String?
+  legalForm         String?
+  siret             String?
+  vatNumber         String?
+  companyAddress    String?
+  companyPostalCode String?
+  companyCity       String?
+  companyPhone      String?
+  companyEmail      String?
+
+  // Coordonnées bancaires
+  bankAccountHolder String?
+  bankName          String?
+  iban              String?
+  bic               String?
+
+  // Assurances
+  insuranceCompany      String?
+  insurancePolicyNumber String?
+  insuranceValidUntil   DateTime?
+  hasLiabilityInsurance Boolean?
+  hasTenYearInsurance   Boolean?
+
+  // Prestation
+  serviceType      String?
+  dailyRate        Decimal?  @db.Decimal(10, 2)
+  interventionZone String?
+  availableFrom    DateTime?
+  experienceNotes  String?
+
+  // Signature (manuscrite, après impression du formulaire)
+  signedAt       DateTime?
+  signedLocation String?
+
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@map("subcontractors")
+}
+
+// ---------- SOCIAL / PUBLISHING ----------
+// Increment 1 (voir docs/CAHIER-DES-CHARGES-RESEAUX.md §4.3) : socle de la
+// couche de publication multi-réseaux. OAuth, adaptateurs par réseau,
+// scheduler et workers BullMQ arrivent dans les increments suivants.
+
+enum SocialNetwork {
+  INSTAGRAM
+  FACEBOOK
+  TIKTOK
+}
+
+enum SocialAccountStatus {
+  PENDING
+  CONNECTED
+  ERROR
+}
+
+// Ce qu'un compte peut faire à l'instant T. Piloté par l'adaptateur du
+// réseau ; l'UI et le moteur de publication s'y réfèrent plutôt que de
+// coder en dur "TikTok = brouillon".
+enum SocialCapabilityKind {
+  AUTO_PUBLISH
+  DRAFT_ONLY
+  MANUAL
+  UNVERIFIED
+  EXPIRED
+}
+
+model SocialAccount {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  network    SocialNetwork
+  externalId String?
+  handle     String?
+
+  // Plaintext pour V1 — jamais renvoyés par un endpoint GET. Même posture
+  // que WhatsAppChannel.whapiToken ; passer à un chiffrement applicatif
+  // AES-256 quand un utilitaire de crypto partagé existera.
+  accessTokenEnc  String?
+  refreshTokenEnc String?
+  scopes          String[] @default([])
+  tokenExpiresAt  DateTime?
+
+  status     SocialAccountStatus @default(PENDING)
+  lastSyncAt DateTime?
+
+  // Idempotence des webhooks entrants (cf. WhatsAppChannel.webhookSecret).
+  webhookSecret String @unique @default(uuid())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  capability         SocialAccountCapability?
+  publicationTargets PublicationTarget[]
+  webhookEvents      SocialWebhookEvent[]
+
+  @@unique([companyId, network])
+  @@index([tenantId])
+  @@map("social_accounts")
+}
+
+model SocialAccountCapability {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  accountId String        @unique
+  account   SocialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  capability SocialCapabilityKind @default(UNVERIFIED)
+  reason     String?
+  checkedAt  DateTime             @default(now())
+
+  @@index([tenantId])
+  @@map("social_account_capabilities")
+}
+
+// Intention éditoriale (le "quoi"). Réutilise l'enum ContentStatus existant
+// pour rester aligné sur le pipeline marketing déjà en place.
+model Publication {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  contentItemId String?
+  contentItem   ContentItem? @relation(fields: [contentItemId], references: [id], onDelete: SetNull)
+
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  title       String
+  status      ContentStatus @default(DRAFT)
+  scheduledAt DateTime?
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  targets PublicationTarget[]
+
+  @@index([tenantId])
+  @@index([scheduledAt])
+  @@map("publications")
+}
+
+enum PublicationTargetStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  ACTION_REQUISE
+  FAILED
+  CANCELLED
+}
+
+enum PublicationTargetMode {
+  AUTO
+  DRAFT
+  MANUAL
+}
+
+// Déclinaison d'une publication pour un réseau (le "où"). Chaque target est
+// indépendante : IG peut être PUBLISHED pendant que TikTok est ACTION_REQUISE.
+model PublicationTarget {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  publicationId String
+  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  accountId String
+  account   SocialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  network  SocialNetwork
+  caption  String?
+  hashtags String[] @default([])
+  // Références MediaAsset.id — relation explicite ajoutée à un increment
+  // ultérieur (médiathèque), inutile de coupler les deux modules maintenant.
+  mediaIds String[] @default([])
+
+  status PublicationTargetStatus @default(DRAFT)
+  mode   PublicationTargetMode   @default(AUTO)
+
+  scheduledAt    DateTime?
+  externalPostId String?
+  publishedAt    DateTime?
+  lastError      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attempts PublicationAttempt[]
+
+  @@index([tenantId])
+  @@index([publicationId])
+  @@index([status, scheduledAt])
+  @@map("publication_targets")
+}
+
+enum PublicationAttemptOutcome {
+  OK
+  RETRY
+  FAILED
+}
+
+model PublicationAttempt {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  targetId String
+  target   PublicationTarget @relation(fields: [targetId], references: [id], onDelete: Cascade)
+
+  attemptNumber    Int
+  outcome          PublicationAttemptOutcome
+  errorCode        String?
+  errorDetail      String?
+  providerResponse Json?
+
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([tenantId])
+  @@index([targetId])
+  @@map("publication_attempts")
+}
+
+model SocialWebhookEvent {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  accountId String?
+  account   SocialAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  network         SocialNetwork
+  // Id de l'événement chez le fournisseur — clé d'idempotence contre les rejeux.
+  externalEventId String        @unique
+  type            String
+  payload         Json
+  processedAt     DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@map("social_webhook_events")
 }
