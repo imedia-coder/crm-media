@@ -25,7 +25,6 @@ jobs:
       DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/crm_media_test'
       RUNTIME_DATABASE_URL: 'postgresql://app_runtime:ci_test_password@localhost:5432/crm_media_test'
       JWT_ACCESS_SECRET: 'ci-test-access-secret'
-      JWT_REFRESH_SECRET: 'ci-test-refresh-secret'
       PORT: '3001'
 
     services:

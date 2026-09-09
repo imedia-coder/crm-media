@@ -1,6 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { AuthenticatedOnly } from './decorators/authenticated-only.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -46,6 +47,9 @@ export class AuthController {
     await this.authService.logout(dto.refreshToken);
   }
 
+  // Gere son propre MFA/mot de passe — pas besoin d'une permission
+  // specifique au-dela d'etre authentifie.
+  @AuthenticatedOnly()
   @Post('mfa/setup')
   setupMfa(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.setupMfa(user.id);
@@ -53,6 +57,7 @@ export class AuthController {
 
   // Limite le brute-force du code TOTP a 6 chiffres — authentifie mais
   // ne veut pas dire de confiance illimitee sur ce point d'entree.
+  @AuthenticatedOnly()
   @Throttle({ default: { limit: 5, ttl: 300_000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('mfa/enable')
@@ -63,6 +68,7 @@ export class AuthController {
     await this.authService.enableMfa(user.id, dto.code);
   }
 
+  @AuthenticatedOnly()
   @Throttle({ default: { limit: 5, ttl: 300_000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('mfa/disable')
@@ -73,6 +79,7 @@ export class AuthController {
     await this.authService.disableMfa(user.id, dto.code);
   }
 
+  @AuthenticatedOnly()
   @Throttle({ default: { limit: 5, ttl: 900_000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('change-password')
