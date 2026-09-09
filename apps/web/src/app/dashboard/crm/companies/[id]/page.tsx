@@ -20,6 +20,9 @@ export default function CompanyDetailPage() {
   const [savingNotes, setSavingNotes] = useState(false);
 
   useEffect(() => {
+    // Synchronise le brouillon local editable depuis les donnees chargees
+    // (SWR), pas un calcul derivable au rendu.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (company) setNotes(company.notes ?? '');
   }, [company]);
 

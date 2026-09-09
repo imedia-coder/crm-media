@@ -31,6 +31,9 @@ export default function WhatsAppInboxPage() {
   }, [thread?.messages]);
 
   useEffect(() => {
+    // Reset delibere a chaque changement de conversation, pas un calcul
+    // derivable au rendu.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLinking(false);
   }, [conversationId]);
 

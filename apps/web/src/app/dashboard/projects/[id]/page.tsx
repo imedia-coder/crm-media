@@ -3,7 +3,6 @@
 import { useParams } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 import { mutate } from 'swr';
-import { Badge } from '@/components/badge';
 import { Field } from '@/components/form-field';
 import { api, ApiError } from '@/lib/api';
 import { Project, Task, TaskPriority, TaskStatus } from '@/lib/types';

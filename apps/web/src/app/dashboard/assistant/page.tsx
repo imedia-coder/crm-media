@@ -19,6 +19,9 @@ export default function AssistantPage() {
 
   useEffect(() => {
     if (!conversationId) {
+      // Reset delibere a chaque changement de conversation, pas un calcul
+      // derivable au rendu.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMessages([]);
       return;
     }

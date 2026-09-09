@@ -2,6 +2,8 @@
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
+[![CI (api)](https://github.com/imedia-coder/crm-media/actions/workflows/api-ci.yml/badge.svg)](https://github.com/imedia-coder/crm-media/actions/workflows/api-ci.yml)
+
 [circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
 [circleci-url]: https://circleci.com/gh/nestjs/nest
 
@@ -56,6 +58,12 @@ $ pnpm run test:e2e
 # test coverage
 $ pnpm run test:cov
 ```
+
+## CI
+
+`.github/workflows/api-ci.yml`, à la racine du monorepo, se déclenche à chaque push/pull request sur `main` touchant `apps/api/**` : vérification des types, tests unitaires, migrations Prisma puis tests e2e — le tout contre un Postgres jetable (service Docker `postgres:16-alpine`), jamais la base Neon de production. Comme `prisma/migrations/20260723040000_app_runtime_role` ne fixe volontairement aucun mot de passe pour le rôle `app_runtime` (voir `.env.example`), la CI en définit un propre au job juste après les migrations.
+
+Pas de lint dans cette CI pour l'instant : `eslint` (sans `--fix`) remonte actuellement ~290 problèmes sur l'ensemble du code, très majoritairement du formatage Prettier (probablement une dérive CRLF/LF) plus une poignée de vraies erreurs de règles — un chantier à part, distinct de la mise en place de la CI, qui toucherait aussi des fichiers en cours d'édition.
 
 ## Deployment
 

@@ -1,0 +1,86 @@
+name: CI (api)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/api-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/api-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # DATABASE_URL = rôle "owner" (migrations, RLS bypass) ; RUNTIME_DATABASE_URL
+    # = rôle applicatif non-bypass (voir .env.example) — tous deux jetables,
+    # propres à ce job, jamais les identifiants Neon de production.
+    env:
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/crm_media_test'
+      RUNTIME_DATABASE_URL: 'postgresql://app_runtime:ci_test_password@localhost:5432/crm_media_test'
+      JWT_ACCESS_SECRET: 'ci-test-access-secret'
+      JWT_REFRESH_SECRET: 'ci-test-refresh-secret'
+      PORT: '3001'
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: crm_media_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Installer les dépendances (monorepo pnpm — lockfile unique à la racine)
+        run: pnpm install --frozen-lockfile
+
+      - name: Générer le client Prisma
+        run: pnpm --filter api exec prisma generate
+
+      - name: Vérification des types
+        run: pnpm --filter api exec tsc --noEmit
+
+      - name: Tests unitaires
+        run: pnpm --filter api run test
+
+      # Crée aussi le rôle app_runtime (voir la migration dédiée
+      # 20260723040000_app_runtime_role) mais sans mot de passe — jamais fixé
+      # dans les migrations elles-mêmes.
+      - name: Appliquer les migrations
+        run: pnpm --filter api exec prisma migrate deploy
+
+      - name: Définir le mot de passe du rôle app_runtime pour ce job
+        working-directory: apps/api
+        run: |
+          node -e "
+            const { Client } = require('pg');
+            const c = new Client({ connectionString: process.env.DATABASE_URL });
+            c.connect()
+              .then(() => c.query(\"ALTER ROLE app_runtime WITH PASSWORD 'ci_test_password'\"))
+              .then(() => c.end());
+          "
+
+      - name: Tests e2e
+        run: pnpm --filter api run test:e2e

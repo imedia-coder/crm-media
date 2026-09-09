@@ -70,6 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const token = getAccessToken();
     if (token) {
+      // Hydratation depuis le token/localStorage (client-only, indisponible
+      // pendant le rendu serveur) — pas un calcul derivable au rendu.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUser(decodeJwt<AuthUser>(token));
       const storedTenant = window.localStorage.getItem(TENANT_KEY);
       if (storedTenant) setTenant(JSON.parse(storedTenant));

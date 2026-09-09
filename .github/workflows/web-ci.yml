@@ -1,0 +1,41 @@
+name: CI (web)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/web-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/web-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Installer les dépendances (monorepo pnpm — lockfile unique à la racine)
+        run: pnpm install --frozen-lockfile
+
+      - name: Vérification des types
+        run: pnpm --filter web exec tsc --noEmit
+
+      - name: Lint
+        run: pnpm --filter web run lint
+
+      - name: Build
+        run: pnpm --filter web run build

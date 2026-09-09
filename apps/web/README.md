@@ -1,3 +1,5 @@
+[![CI (web)](https://github.com/imedia-coder/crm-media/actions/workflows/web-ci.yml/badge.svg)](https://github.com/imedia-coder/crm-media/actions/workflows/web-ci.yml)
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
@@ -28,6 +30,10 @@ To learn more about Next.js, take a look at the following resources:
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## CI
+
+`.github/workflows/web-ci.yml`, à la racine du monorepo, se déclenche à chaque push/pull request sur `main` touchant `apps/web/**` : vérification des types (`tsc --noEmit`), lint (`eslint`) et build (`next build`). Pas de suite de tests automatisés pour l'instant.
 
 ## Deploy on Vercel
 
