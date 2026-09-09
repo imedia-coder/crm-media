@@ -1,0 +1,41 @@
+name: CI (mobile)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
+
+      - name: Installer les dépendances
+        run: flutter pub get
+
+      # --no-fatal-infos : quelques infos existantes (style, API deprecated
+      # non bloquantes) ne doivent pas faire echouer la CI — seuls erreurs
+      # et warnings sont fatals.
+      - name: Analyse statique
+        run: flutter analyze --no-fatal-infos
+
+      - name: Tests
+        run: flutter test

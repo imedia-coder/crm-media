@@ -48,6 +48,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # sqflite n'a pas d'implementation utilisable dans l'environnement de test
+  # (pas de canal de plateforme) — sqflite_common_ffi fournit un
+  # databaseFactory base sur SQLite natif pour que les widgets qui touchent
+  # AppDatabase (voir lib/data/database.dart) restent testables.
+  sqflite_common_ffi: ^2.3.4+4
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your

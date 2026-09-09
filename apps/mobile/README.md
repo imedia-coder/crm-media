@@ -1,6 +1,12 @@
 # teleprompt_mobile
 
+[![CI (mobile)](https://github.com/imedia-coder/crm-media/actions/workflows/mobile-ci.yml/badge.svg)](https://github.com/imedia-coder/crm-media/actions/workflows/mobile-ci.yml)
+
 A new Flutter project.
+
+## CI
+
+`.github/workflows/mobile-ci.yml`, à la racine du monorepo, se déclenche à chaque push/pull request sur `main` touchant `apps/mobile/**` : `flutter analyze --no-fatal-infos` puis `flutter test`. Les tests montent l'app via `sqflite_common_ffi` (voir `test/widget_test.dart`) — sqflite n'a pas d'implémentation utilisable dans l'environnement de test.
 
 ## Getting Started
 
