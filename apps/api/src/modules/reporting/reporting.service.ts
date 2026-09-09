@@ -28,7 +28,10 @@ export class ReportingService {
     for (let i = 0; i < months; i++) {
       const d = new Date(since);
       d.setMonth(d.getMonth() + i);
-      byMonth.set(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, 0);
+      byMonth.set(
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        0,
+      );
     }
     for (const invoice of invoices) {
       for (const payment of invoice.payments) {
@@ -40,7 +43,10 @@ export class ReportingService {
       }
     }
 
-    return Array.from(byMonth.entries()).map(([month, total]) => ({ month, total: Math.round(total * 100) / 100 }));
+    return Array.from(byMonth.entries()).map(([month, total]) => ({
+      month,
+      total: Math.round(total * 100) / 100,
+    }));
   }
 
   async pipelineConversion() {
@@ -55,7 +61,13 @@ export class ReportingService {
       isWon: stage.isWon,
       isLost: stage.isLost,
       dealCount: stage.deals.length,
-      totalValue: Math.round(stage.deals.reduce((sum, d) => sum + Number(d.estimatedValue ?? 0), 0) * 100) / 100,
+      totalValue:
+        Math.round(
+          stage.deals.reduce(
+            (sum, d) => sum + Number(d.estimatedValue ?? 0),
+            0,
+          ) * 100,
+        ) / 100,
     }));
   }
 
@@ -72,13 +84,18 @@ export class ReportingService {
 
     return projects.map((project) => {
       const totalMinutes = project.tasks.reduce(
-        (sum, task) => sum + task.timeEntries.reduce((s, t) => s + t.minutes, 0),
+        (sum, task) =>
+          sum + task.timeEntries.reduce((s, t) => s + t.minutes, 0),
         0,
       );
       const doneTasks = project.tasks.filter((t) => t.status === 'DONE').length;
-      const invoicedTotal = project.invoices.reduce((sum, inv) => sum + computeTotals(inv.lines).total, 0);
+      const invoicedTotal = project.invoices.reduce(
+        (sum, inv) => sum + computeTotals(inv.lines).total,
+        0,
+      );
       const paidTotal = project.invoices.reduce(
-        (sum, inv) => sum + inv.payments.reduce((s, p) => s + Number(p.amount), 0),
+        (sum, inv) =>
+          sum + inv.payments.reduce((s, p) => s + Number(p.amount), 0),
         0,
       );
 
@@ -89,7 +106,10 @@ export class ReportingService {
         status: project.status,
         budget: project.budget ? Number(project.budget) : null,
         hoursLogged: Math.round((totalMinutes / 60) * 10) / 10,
-        taskCompletion: project.tasks.length > 0 ? Math.round((doneTasks / project.tasks.length) * 100) : 0,
+        taskCompletion:
+          project.tasks.length > 0
+            ? Math.round((doneTasks / project.tasks.length) * 100)
+            : 0,
         invoicedTotal: Math.round(invoicedTotal * 100) / 100,
         paidTotal: Math.round(paidTotal * 100) / 100,
       };

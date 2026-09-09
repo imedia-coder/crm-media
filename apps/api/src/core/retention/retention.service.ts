@@ -32,15 +32,22 @@ export class RetentionService {
   }
 
   private async purge(tenantId?: string) {
-    const tokenCutoff = new Date(Date.now() - STALE_REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000);
-    const notificationCutoff = new Date(Date.now() - READ_NOTIFICATION_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    const tokenCutoff = new Date(
+      Date.now() - STALE_REFRESH_TOKEN_DAYS * 24 * 60 * 60 * 1000,
+    );
+    const notificationCutoff = new Date(
+      Date.now() - READ_NOTIFICATION_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+    );
 
     // Sequential, not Promise.all: unrelated to the tenant-scoped RLS client,
     // but kept consistent with the rest of the codebase's discipline around
     // not firing concurrent queries on a shared client.
     const tokens = await this.platformPrisma.refreshToken.deleteMany({
       where: {
-        OR: [{ revokedAt: { lt: tokenCutoff } }, { expiresAt: { lt: tokenCutoff } }],
+        OR: [
+          { revokedAt: { lt: tokenCutoff } },
+          { expiresAt: { lt: tokenCutoff } },
+        ],
         ...(tenantId ? { user: { tenantId } } : {}),
       },
     });

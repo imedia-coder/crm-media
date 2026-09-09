@@ -1,4 +1,10 @@
-import { IsArray, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
 export enum ContentTypeDto {
   POST = 'POST',

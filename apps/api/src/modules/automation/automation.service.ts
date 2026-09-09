@@ -2,7 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import type { AutomationTrigger, Prisma } from '@prisma/client';
 import { NotificationsService } from '../../core/notifications/notifications.service';
 import { TenantPrismaService } from '../../core/tenancy/tenant-prisma.service';
-import { AutomationAction, AutomationContext, renderTemplate } from './automation-action.types';
+import {
+  AutomationAction,
+  AutomationContext,
+  renderTemplate,
+} from './automation-action.types';
 import { CreateRuleDto } from './dto/create-rule.dto';
 import { UpdateRuleDto } from './dto/update-rule.dto';
 
@@ -14,7 +18,9 @@ export class AutomationService {
   ) {}
 
   findAll() {
-    return this.tenantPrisma.client.automationRule.findMany({ orderBy: { createdAt: 'desc' } });
+    return this.tenantPrisma.client.automationRule.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async findOneOrThrow(id: string) {
@@ -46,7 +52,9 @@ export class AutomationService {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
         ...(dto.trigger !== undefined ? { trigger: dto.trigger } : {}),
         ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
-        ...(dto.actions !== undefined ? { actions: dto.actions as unknown as Prisma.InputJsonValue } : {}),
+        ...(dto.actions !== undefined
+          ? { actions: dto.actions as unknown as Prisma.InputJsonValue }
+          : {}),
       },
     });
   }
@@ -63,16 +71,27 @@ export class AutomationService {
    * Never throws — a broken rule shouldn't fail the request that
    * triggered it; failures are recorded in the rule's run log instead.
    */
-  async fire(trigger: AutomationTrigger, context: AutomationContext): Promise<void> {
+  async fire(
+    trigger: AutomationTrigger,
+    context: AutomationContext,
+  ): Promise<void> {
     const rules = await this.tenantPrisma.client.automationRule.findMany({
       where: { trigger, isActive: true },
     });
     for (const rule of rules) {
-      await this.executeRule(rule.id, rule.actions as unknown as AutomationAction[], context);
+      await this.executeRule(
+        rule.id,
+        rule.actions as unknown as AutomationAction[],
+        context,
+      );
     }
   }
 
-  private async executeRule(ruleId: string, actions: AutomationAction[], context: AutomationContext): Promise<void> {
+  private async executeRule(
+    ruleId: string,
+    actions: AutomationAction[],
+    context: AutomationContext,
+  ): Promise<void> {
     const log: string[] = [];
     let createdProjectId: string | null = null;
     let status: 'SUCCESS' | 'FAILED' = 'SUCCESS';
@@ -84,7 +103,9 @@ export class AutomationService {
             const project = await this.tenantPrisma.client.project.create({
               data: {
                 tenantId: this.tenantPrisma.tenantId,
-                name: renderTemplate(action.config.nameTemplate, context) || 'Nouveau projet',
+                name:
+                  renderTemplate(action.config.nameTemplate, context) ||
+                  'Nouveau projet',
                 companyId: context.companyId ?? undefined,
                 status: 'PLANNED',
               },
@@ -94,16 +115,22 @@ export class AutomationService {
             break;
           }
           case 'CREATE_TASK': {
-            const projectId = action.config.useCreatedProject ? createdProjectId : (action.config.projectId ?? null);
+            const projectId = action.config.useCreatedProject
+              ? createdProjectId
+              : (action.config.projectId ?? null);
             if (!projectId) {
-              log.push('Tâche ignorée : aucun projet cible (activez "utiliser le projet créé" ou choisissez un projet).');
+              log.push(
+                'Tâche ignorée : aucun projet cible (activez "utiliser le projet créé" ou choisissez un projet).',
+              );
               break;
             }
             const task = await this.tenantPrisma.client.task.create({
               data: {
                 tenantId: this.tenantPrisma.tenantId,
                 projectId,
-                title: renderTemplate(action.config.titleTemplate, context) || 'Nouvelle tâche',
+                title:
+                  renderTemplate(action.config.titleTemplate, context) ||
+                  'Nouvelle tâche',
               },
             });
             log.push(`Tâche créée : "${task.title}"`);
@@ -111,13 +138,16 @@ export class AutomationService {
           }
           case 'SEND_NOTIFICATION': {
             if (!context.ownerId) {
-              log.push('Notification ignorée : aucun destinataire identifié pour cet événement.');
+              log.push(
+                'Notification ignorée : aucun destinataire identifié pour cet événement.',
+              );
               break;
             }
             await this.notifications.notifyUser(
               context.ownerId,
               'GENERIC',
-              renderTemplate(action.config.titleTemplate, context) || 'Automatisation déclenchée',
+              renderTemplate(action.config.titleTemplate, context) ||
+                'Automatisation déclenchée',
             );
             log.push('Notification envoyée.');
             break;

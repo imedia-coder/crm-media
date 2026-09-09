@@ -28,7 +28,9 @@ export class WebhookService {
   constructor(private readonly platformPrisma: PlatformPrismaService) {}
 
   async handleIncoming(secret: string, rawPayload: unknown): Promise<void> {
-    const channel = await this.platformPrisma.whatsAppChannel.findUnique({ where: { webhookSecret: secret } });
+    const channel = await this.platformPrisma.whatsAppChannel.findUnique({
+      where: { webhookSecret: secret },
+    });
     if (!channel) throw new NotFoundException('Unknown WhatsApp webhook');
 
     const payload = rawPayload as WhapiWebhookPayload;
@@ -46,18 +48,29 @@ export class WebhookService {
     }
   }
 
-  private async processMessage(channelId: string, tenantId: string, msg: WhapiInboundMessage): Promise<void> {
+  private async processMessage(
+    channelId: string,
+    tenantId: string,
+    msg: WhapiInboundMessage,
+  ): Promise<void> {
     const from = msg.from;
     const body = msg.text?.body ?? msg.body;
     if (!from || !body) {
-      this.logger.debug('Ignoring WhatsApp webhook message with no from/body (likely a non-text event)');
+      this.logger.debug(
+        'Ignoring WhatsApp webhook message with no from/body (likely a non-text event)',
+      );
       return;
     }
 
     const phoneNumber = normalizePhone(from);
     if (!phoneNumber) return;
 
-    const conversation = await this.upsertConversation(channelId, tenantId, phoneNumber, msg.from_name);
+    const conversation = await this.upsertConversation(
+      channelId,
+      tenantId,
+      phoneNumber,
+      msg.from_name,
+    );
 
     try {
       await this.platformPrisma.whatsAppMessage.create({
@@ -71,7 +84,9 @@ export class WebhookService {
       });
     } catch (err) {
       if (isUniqueConstraintViolation(err)) {
-        this.logger.debug(`Ignoring duplicate WhatsApp webhook delivery for message ${msg.id}`);
+        this.logger.debug(
+          `Ignoring duplicate WhatsApp webhook delivery for message ${msg.id}`,
+        );
         return;
       }
       throw err;
@@ -79,7 +94,10 @@ export class WebhookService {
 
     await this.platformPrisma.whatsAppConversation.update({
       where: { id: conversation.id },
-      data: { lastMessageAt: new Date(), ...(msg.from_name ? { displayName: msg.from_name } : {}) },
+      data: {
+        lastMessageAt: new Date(),
+        ...(msg.from_name ? { displayName: msg.from_name } : {}),
+      },
     });
   }
 
@@ -101,16 +119,25 @@ export class WebhookService {
   }
 
   /** No auto-create on no-match — leaves contactId null for manual linking from the UI. */
-  private async matchContact(tenantId: string, phoneNumber: string): Promise<string | null> {
+  private async matchContact(
+    tenantId: string,
+    phoneNumber: string,
+  ): Promise<string | null> {
     const contacts = await this.platformPrisma.contact.findMany({
       where: { tenantId, phone: { not: null } },
       select: { id: true, phone: true },
     });
-    const matches = contacts.filter((c) => c.phone && phonesMatch(c.phone, phoneNumber));
+    const matches = contacts.filter(
+      (c) => c.phone && phonesMatch(c.phone, phoneNumber),
+    );
     return matches.length === 1 ? matches[0].id : null;
   }
 }
 
 function isUniqueConstraintViolation(err: unknown): boolean {
-  return typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2002';
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    (err as { code?: string }).code === 'P2002'
+  );
 }

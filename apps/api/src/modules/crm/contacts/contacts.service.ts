@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { ListContactsQuery } from './dto/list-contacts.query';
@@ -16,7 +20,9 @@ export class ContactsService {
   }
 
   async findOneOrThrow(id: string) {
-    const contact = await this.tenantPrisma.client.contact.findUnique({ where: { id } });
+    const contact = await this.tenantPrisma.client.contact.findUnique({
+      where: { id },
+    });
     if (!contact) throw new NotFoundException('Contact not found');
     return contact;
   }
@@ -34,7 +40,9 @@ export class ContactsService {
   async update(id: string, dto: UpdateContactDto) {
     const existing = await this.findOneOrThrow(id);
     if (existing.anonymizedAt) {
-      throw new ConflictException('This contact has been anonymized (RGPD) and can no longer be edited');
+      throw new ConflictException(
+        'This contact has been anonymized (RGPD) and can no longer be edited',
+      );
     }
     return this.tenantPrisma.client.contact.update({
       where: { id },
@@ -64,7 +72,14 @@ export class ContactsService {
       where: { id },
       include: {
         company: { select: { id: true, name: true } },
-        deals: { select: { id: true, title: true, createdAt: true, stage: { select: { name: true } } } },
+        deals: {
+          select: {
+            id: true,
+            title: true,
+            createdAt: true,
+            stage: { select: { name: true } },
+          },
+        },
       },
     });
     if (!contact) throw new NotFoundException('Contact not found');

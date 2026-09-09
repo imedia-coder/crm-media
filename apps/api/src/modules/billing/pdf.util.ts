@@ -12,7 +12,9 @@ export interface RenderDocumentPdfParams {
   lines: (LineLike & { description: string })[];
 }
 
-export function renderDocumentPdf(params: RenderDocumentPdfParams): Promise<Buffer> {
+export function renderDocumentPdf(
+  params: RenderDocumentPdfParams,
+): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50 });
     const chunks: Buffer[] = [];
@@ -50,9 +52,13 @@ export function renderDocumentPdf(params: RenderDocumentPdfParams): Promise<Buff
     const totals = computeTotals(params.lines);
     doc.moveDown();
     doc.text('----------------------------------------');
-    doc.fontSize(10).text(`Sous-total HT : ${totals.subtotal.toFixed(2)} ${params.currency}`);
+    doc
+      .fontSize(10)
+      .text(`Sous-total HT : ${totals.subtotal.toFixed(2)} ${params.currency}`);
     doc.text(`TVA : ${totals.vatTotal.toFixed(2)} ${params.currency}`);
-    doc.fontSize(13).text(`Total TTC : ${totals.total.toFixed(2)} ${params.currency}`);
+    doc
+      .fontSize(13)
+      .text(`Total TTC : ${totals.total.toFixed(2)} ${params.currency}`);
 
     doc.end();
   });

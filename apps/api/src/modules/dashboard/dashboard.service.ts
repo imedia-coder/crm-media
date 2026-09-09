@@ -15,7 +15,9 @@ export class DashboardService {
     // same connection, which the driver rejects.
     return this.tenantPrisma.transaction(async (tx) => {
       const totalCompanies = await tx.company.count();
-      const totalClients = await tx.company.count({ where: { isClient: true } });
+      const totalClients = await tx.company.count({
+        where: { isClient: true },
+      });
       const activeProjects = await tx.project.count({
         where: { status: { in: ['PLANNED', 'IN_PROGRESS', 'ON_HOLD'] } },
       });
@@ -27,10 +29,15 @@ export class DashboardService {
         where: { status: { in: ['SENT', 'OVERDUE'] } },
         include: { lines: true, payments: true },
       });
-      const overdueInvoicesCount = await tx.invoice.count({ where: { status: 'OVERDUE' } });
+      const overdueInvoicesCount = await tx.invoice.count({
+        where: { status: 'OVERDUE' },
+      });
       const upcomingAppointments = await tx.appointment.findMany({
         where: { startAt: { gte: now } },
-        include: { project: { select: { id: true, name: true } }, company: { select: { id: true, name: true } } },
+        include: {
+          project: { select: { id: true, name: true } },
+          company: { select: { id: true, name: true } },
+        },
         orderBy: { startAt: 'asc' },
         take: 5,
       });
@@ -41,13 +48,19 @@ export class DashboardService {
         take: 5,
       });
       const upcomingProjectDeadlines = await tx.project.findMany({
-        where: { dueDate: { gte: now }, status: { notIn: ['DONE', 'ARCHIVED'] } },
+        where: {
+          dueDate: { gte: now },
+          status: { notIn: ['DONE', 'ARCHIVED'] },
+        },
         include: { company: { select: { id: true, name: true } } },
         orderBy: { dueDate: 'asc' },
         take: 5,
       });
 
-      const openDealsValue = openDeals.reduce((sum, d) => sum + Number(d.estimatedValue ?? 0), 0);
+      const openDealsValue = openDeals.reduce(
+        (sum, d) => sum + Number(d.estimatedValue ?? 0),
+        0,
+      );
       const unpaidInvoicesTotal = unpaidInvoices.reduce((sum, invoice) => {
         const totals = computeTotals(invoice.lines);
         const paid = invoice.payments.reduce((s, p) => s + Number(p.amount), 0);

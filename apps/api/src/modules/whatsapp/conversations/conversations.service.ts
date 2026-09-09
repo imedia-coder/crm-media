@@ -23,13 +23,14 @@ export class ConversationsService {
   }
 
   async findOneOrThrow(id: string) {
-    const conversation = await this.tenantPrisma.client.whatsAppConversation.findUnique({
-      where: { id },
-      include: {
-        contact: { select: CONTACT_SELECT },
-        messages: { orderBy: { createdAt: 'asc' } },
-      },
-    });
+    const conversation =
+      await this.tenantPrisma.client.whatsAppConversation.findUnique({
+        where: { id },
+        include: {
+          contact: { select: CONTACT_SELECT },
+          messages: { orderBy: { createdAt: 'asc' } },
+        },
+      });
     if (!conversation) throw new NotFoundException('Conversation not found');
     return conversation;
   }
@@ -37,12 +38,18 @@ export class ConversationsService {
   async sendMessage(id: string, dto: SendMessageDto) {
     const conversation = await this.findExistingConversation(id);
     // Raw channel row (includes the Whapi token) — internal use only.
-    const channel = await this.channelsService.findOneOrThrow(conversation.channelId);
+    const channel = await this.channelsService.findOneOrThrow(
+      conversation.channelId,
+    );
 
     let whapiMessageId: string | undefined;
     let status: 'SENT' | 'FAILED' = 'SENT';
     try {
-      const result = await this.whapiClient.sendTextMessage(channel.whapiToken, conversation.phoneNumber, dto.body);
+      const result = await this.whapiClient.sendTextMessage(
+        channel.whapiToken,
+        conversation.phoneNumber,
+        dto.body,
+      );
       whapiMessageId = result.whapiMessageId;
     } catch {
       // Still persist the message below so the compose action isn't
@@ -53,9 +60,18 @@ export class ConversationsService {
 
     return this.tenantPrisma.transaction(async (tx) => {
       const message = await tx.whatsAppMessage.create({
-        data: { conversationId: id, direction: 'OUTBOUND', status, body: dto.body, whapiMessageId },
+        data: {
+          conversationId: id,
+          direction: 'OUTBOUND',
+          status,
+          body: dto.body,
+          whapiMessageId,
+        },
       });
-      await tx.whatsAppConversation.update({ where: { id }, data: { lastMessageAt: new Date() } });
+      await tx.whatsAppConversation.update({
+        where: { id },
+        data: { lastMessageAt: new Date() },
+      });
       return message;
     });
   }
@@ -78,7 +94,10 @@ export class ConversationsService {
   }
 
   private async findExistingConversation(id: string) {
-    const conversation = await this.tenantPrisma.client.whatsAppConversation.findUnique({ where: { id } });
+    const conversation =
+      await this.tenantPrisma.client.whatsAppConversation.findUnique({
+        where: { id },
+      });
     if (!conversation) throw new NotFoundException('Conversation not found');
     return conversation;
   }

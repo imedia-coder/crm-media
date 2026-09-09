@@ -40,7 +40,10 @@ export class InvoicesController {
 
   @RequirePermissions(BILLING_PERMISSIONS.INVOICES_READ)
   @Get(':id/pdf')
-  async pdf(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+  async pdf(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const buffer = await this.invoicesService.renderPdf(id);
     res.set({ 'Content-Type': 'application/pdf' });
     return new StreamableFile(buffer);
@@ -79,7 +82,10 @@ export class InvoicesController {
   @RequirePermissions(BILLING_PERMISSIONS.INVOICES_WRITE)
   @Post(':id/mark-paid')
   markAsPaid(@Param('id') id: string, @Body() dto: MarkPaidDto) {
-    return this.invoicesService.markAsPaid(id, dto.method ?? PaymentMethodDto.OTHER);
+    return this.invoicesService.markAsPaid(
+      id,
+      dto.method ?? PaymentMethodDto.OTHER,
+    );
   }
 
   @RequirePermissions(BILLING_PERMISSIONS.INVOICES_WRITE)

@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { NotificationsService } from '../../../core/notifications/notifications.service';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
 import { AutomationService } from '../../automation/automation.service';
@@ -24,21 +29,32 @@ export class InvoicesService {
   // ever rolled back afterwards this notification would already be sent).
   private async notifyIfNewlyPaid(invoiceId: string, isNowPaid: boolean) {
     if (!isNowPaid) return;
-    const invoice = await this.tenantPrisma.client.invoice.findUnique({ where: { id: invoiceId } });
+    const invoice = await this.tenantPrisma.client.invoice.findUnique({
+      where: { id: invoiceId },
+    });
     if (!invoice) return;
 
     let managerId: string | null = null;
     if (invoice.projectId) {
-      const project = await this.tenantPrisma.client.project.findUnique({ where: { id: invoice.projectId } });
+      const project = await this.tenantPrisma.client.project.findUnique({
+        where: { id: invoice.projectId },
+      });
       managerId = project?.managerId ?? null;
       if (managerId) {
-        await this.notifications.notifyUser(managerId, 'INVOICE_PAID', `Facture payée : ${invoice.number}`, {
-          link: '/dashboard/billing/invoices',
-        });
+        await this.notifications.notifyUser(
+          managerId,
+          'INVOICE_PAID',
+          `Facture payée : ${invoice.number}`,
+          {
+            link: '/dashboard/billing/invoices',
+          },
+        );
       }
     }
 
-    const company = await this.tenantPrisma.client.company.findUnique({ where: { id: invoice.companyId } });
+    const company = await this.tenantPrisma.client.company.findUnique({
+      where: { id: invoice.companyId },
+    });
     await this.automation.fire('INVOICE_PAID', {
       companyId: invoice.companyId,
       companyName: company?.name ?? null,
@@ -61,23 +77,40 @@ export class InvoicesService {
   async findOneOrThrow(id: string) {
     const invoice = await this.tenantPrisma.client.invoice.findUnique({
       where: { id },
-      include: { company: true, lines: true, payments: true, quote: true, project: true },
+      include: {
+        company: true,
+        lines: true,
+        payments: true,
+        quote: true,
+        project: true,
+      },
     });
     if (!invoice) throw new NotFoundException('Invoice not found');
     return this.withComputedFields(invoice);
   }
 
-  private withComputedFields<T extends { lines: any[]; payments: { amount: unknown }[] }>(invoice: T) {
+  private withComputedFields<
+    T extends { lines: any[]; payments: { amount: unknown }[] },
+  >(invoice: T) {
     const totals = computeTotals(invoice.lines);
-    const amountPaid = round2(invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0));
-    return { ...invoice, totals, amountPaid, amountDue: round2(totals.total - amountPaid) };
+    const amountPaid = round2(
+      invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0),
+    );
+    return {
+      ...invoice,
+      totals,
+      amountPaid,
+      amountDue: round2(totals.total - amountPaid),
+    };
   }
 
   async create(dto: CreateInvoiceDto) {
     const tenantId = this.tenantPrisma.tenantId;
     return this.tenantPrisma.transaction(async (tx) => {
       const number = await nextDocumentNumber('FAC', (yearStart) =>
-        tx.invoice.count({ where: { tenantId, createdAt: { gte: yearStart } } }),
+        tx.invoice.count({
+          where: { tenantId, createdAt: { gte: yearStart } },
+        }),
       );
       const invoice = await tx.invoice.create({
         data: {
@@ -106,14 +139,21 @@ export class InvoicesService {
   async createFromQuote(quoteId: string) {
     const tenantId = this.tenantPrisma.tenantId;
     return this.tenantPrisma.transaction(async (tx) => {
-      const quote = await tx.quote.findUnique({ where: { id: quoteId }, include: { lines: true } });
+      const quote = await tx.quote.findUnique({
+        where: { id: quoteId },
+        include: { lines: true },
+      });
       if (!quote) throw new NotFoundException('Quote not found');
       if (quote.status !== 'ACCEPTED') {
-        throw new ConflictException('Only an accepted quote can be converted to an invoice');
+        throw new ConflictException(
+          'Only an accepted quote can be converted to an invoice',
+        );
       }
 
       const number = await nextDocumentNumber('FAC', (yearStart) =>
-        tx.invoice.count({ where: { tenantId, createdAt: { gte: yearStart } } }),
+        tx.invoice.count({
+          where: { tenantId, createdAt: { gte: yearStart } },
+        }),
       );
       const invoice = await tx.invoice.create({
         data: {
@@ -139,7 +179,9 @@ export class InvoicesService {
   }
 
   async update(id: string, dto: UpdateInvoiceDto) {
-    const existing = await this.tenantPrisma.client.invoice.findUnique({ where: { id } });
+    const existing = await this.tenantPrisma.client.invoice.findUnique({
+      where: { id },
+    });
     if (!existing) throw new NotFoundException('Invoice not found');
     if (existing.status !== 'DRAFT') {
       throw new ConflictException('Only draft invoices can be edited');
@@ -176,28 +218,47 @@ export class InvoicesService {
   }
 
   async send(id: string) {
-    const invoice = await this.tenantPrisma.client.invoice.findUnique({ where: { id } });
+    const invoice = await this.tenantPrisma.client.invoice.findUnique({
+      where: { id },
+    });
     if (!invoice) throw new NotFoundException('Invoice not found');
     if (invoice.status !== 'DRAFT') {
-      throw new ConflictException(`Invoice must be in status DRAFT (currently ${invoice.status})`);
+      throw new ConflictException(
+        `Invoice must be in status DRAFT (currently ${invoice.status})`,
+      );
     }
-    return this.tenantPrisma.client.invoice.update({ where: { id }, data: { status: 'SENT' } });
+    return this.tenantPrisma.client.invoice.update({
+      where: { id },
+      data: { status: 'SENT' },
+    });
   }
 
   async recordPayment(id: string, dto: RecordPaymentDto) {
     const result = await this.tenantPrisma.transaction(async (tx) => {
-      const invoice = await tx.invoice.findUnique({ where: { id }, include: { lines: true, payments: true } });
+      const invoice = await tx.invoice.findUnique({
+        where: { id },
+        include: { lines: true, payments: true },
+      });
       if (!invoice) throw new NotFoundException('Invoice not found');
       if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') {
-        throw new ConflictException(`Cannot record a payment on a ${invoice.status.toLowerCase()} invoice`);
+        throw new ConflictException(
+          `Cannot record a payment on a ${invoice.status.toLowerCase()} invoice`,
+        );
       }
 
       await tx.payment.create({
-        data: { invoiceId: id, amount: dto.amount, method: dto.method, reference: dto.reference },
+        data: {
+          invoiceId: id,
+          amount: dto.amount,
+          method: dto.method,
+          reference: dto.reference,
+        },
       });
 
       const totals = computeTotals(invoice.lines);
-      const paidSoFar = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0) + dto.amount;
+      const paidSoFar =
+        invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0) +
+        dto.amount;
       const updated = await tx.invoice.update({
         where: { id },
         data: paidSoFar >= totals.total ? { status: 'PAID' } : {},
@@ -217,17 +278,27 @@ export class InvoicesService {
    */
   async markAsPaid(id: string, method: RecordPaymentDto['method']) {
     const result = await this.tenantPrisma.transaction(async (tx) => {
-      const invoice = await tx.invoice.findUnique({ where: { id }, include: { lines: true, payments: true } });
+      const invoice = await tx.invoice.findUnique({
+        where: { id },
+        include: { lines: true, payments: true },
+      });
       if (!invoice) throw new NotFoundException('Invoice not found');
       if (invoice.status === 'PAID' || invoice.status === 'CANCELLED') {
-        throw new ConflictException(`Cannot record a payment on a ${invoice.status.toLowerCase()} invoice`);
+        throw new ConflictException(
+          `Cannot record a payment on a ${invoice.status.toLowerCase()} invoice`,
+        );
       }
 
       const totals = computeTotals(invoice.lines);
-      const paidSoFar = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
+      const paidSoFar = invoice.payments.reduce(
+        (sum, p) => sum + Number(p.amount),
+        0,
+      );
       const remaining = round2(totals.total - paidSoFar);
       if (remaining > 0) {
-        await tx.payment.create({ data: { invoiceId: id, amount: remaining, method } });
+        await tx.payment.create({
+          data: { invoiceId: id, amount: remaining, method },
+        });
       }
 
       const updated = await tx.invoice.update({
@@ -243,7 +314,9 @@ export class InvoicesService {
   }
 
   async remove(id: string) {
-    const invoice = await this.tenantPrisma.client.invoice.findUnique({ where: { id } });
+    const invoice = await this.tenantPrisma.client.invoice.findUnique({
+      where: { id },
+    });
     if (!invoice) throw new NotFoundException('Invoice not found');
     if (invoice.status !== 'DRAFT') {
       throw new ConflictException('Only draft invoices can be deleted');

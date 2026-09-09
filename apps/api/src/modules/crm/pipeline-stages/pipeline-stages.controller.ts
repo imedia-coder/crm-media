@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { CRM_PERMISSIONS } from '../../../core/auth/permissions.constants';
 import { RequirePermissions } from '../../../core/auth/decorators/permissions.decorator';
 import { CreatePipelineStageDto } from './dto/create-pipeline-stage.dto';

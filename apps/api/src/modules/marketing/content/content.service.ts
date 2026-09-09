@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { NotificationsService } from '../../../core/notifications/notifications.service';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
 import { MARKETING_PERMISSIONS } from '../../../core/auth/permissions.constants';
@@ -72,26 +76,41 @@ export class ContentService {
   }
 
   async update(id: string, dto: UpdateContentDto) {
-    const existing = await this.tenantPrisma.client.contentItem.findUnique({ where: { id } });
+    const existing = await this.tenantPrisma.client.contentItem.findUnique({
+      where: { id },
+    });
     if (!existing) throw new NotFoundException('Content item not found');
     if (existing.status !== 'DRAFT') {
       throw new ConflictException('Only draft content can be edited');
     }
-    return this.tenantPrisma.client.contentItem.update({ where: { id }, data: dto });
+    return this.tenantPrisma.client.contentItem.update({
+      where: { id },
+      data: dto,
+    });
   }
 
-  private async transition(id: string, expected: string | string[], data: Record<string, unknown>) {
-    const content = await this.tenantPrisma.client.contentItem.findUnique({ where: { id } });
+  private async transition(
+    id: string,
+    expected: string | string[],
+    data: Record<string, unknown>,
+  ) {
+    const content = await this.tenantPrisma.client.contentItem.findUnique({
+      where: { id },
+    });
     if (!content) throw new NotFoundException('Content item not found');
     const expectedList = Array.isArray(expected) ? expected : [expected];
     if (!expectedList.includes(content.status)) {
-      throw new ConflictException(`Content must be in status ${expectedList.join(' or ')} (currently ${content.status})`);
+      throw new ConflictException(
+        `Content must be in status ${expectedList.join(' or ')} (currently ${content.status})`,
+      );
     }
     return this.tenantPrisma.client.contentItem.update({ where: { id }, data });
   }
 
   async submit(id: string) {
-    const content = await this.transition(id, 'DRAFT', { status: 'PENDING_VALIDATION' });
+    const content = await this.transition(id, 'DRAFT', {
+      status: 'PENDING_VALIDATION',
+    });
     await this.notifications.notifyUsersWithPermission(
       MARKETING_PERMISSIONS.CONTENT_VALIDATE,
       'CONTENT_VALIDATION_NEEDED',
@@ -102,23 +121,37 @@ export class ContentService {
   }
 
   validate(id: string, validatedById: string) {
-    return this.transition(id, 'PENDING_VALIDATION', { status: 'VALIDATED', validatedById });
+    return this.transition(id, 'PENDING_VALIDATION', {
+      status: 'VALIDATED',
+      validatedById,
+    });
   }
 
   reject(id: string, validatedById: string) {
-    return this.transition(id, 'PENDING_VALIDATION', { status: 'REJECTED', validatedById });
+    return this.transition(id, 'PENDING_VALIDATION', {
+      status: 'REJECTED',
+      validatedById,
+    });
   }
 
   schedule(id: string, dto: ScheduleContentDto) {
-    return this.transition(id, 'VALIDATED', { status: 'SCHEDULED', scheduledAt: new Date(dto.scheduledAt) });
+    return this.transition(id, 'VALIDATED', {
+      status: 'SCHEDULED',
+      scheduledAt: new Date(dto.scheduledAt),
+    });
   }
 
   publish(id: string) {
-    return this.transition(id, 'SCHEDULED', { status: 'PUBLISHED', publishedAt: new Date() });
+    return this.transition(id, 'SCHEDULED', {
+      status: 'PUBLISHED',
+      publishedAt: new Date(),
+    });
   }
 
   async remove(id: string) {
-    const content = await this.tenantPrisma.client.contentItem.findUnique({ where: { id } });
+    const content = await this.tenantPrisma.client.contentItem.findUnique({
+      where: { id },
+    });
     if (!content) throw new NotFoundException('Content item not found');
     if (content.status !== 'DRAFT') {
       throw new ConflictException('Only draft content can be deleted');

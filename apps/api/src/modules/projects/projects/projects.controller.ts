@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { RequirePermissions } from '../../../core/auth/decorators/permissions.decorator';
 import { PROJECT_PERMISSIONS } from '../../../core/auth/permissions.constants';
 import { CreateProjectDto } from './dto/create-project.dto';

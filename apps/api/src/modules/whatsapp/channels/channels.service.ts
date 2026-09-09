@@ -15,7 +15,9 @@ export class ChannelsService {
   constructor(private readonly tenantPrisma: TenantPrismaService) {}
 
   async findAll() {
-    const channels = await this.tenantPrisma.client.whatsAppChannel.findMany({ orderBy: { createdAt: 'desc' } });
+    const channels = await this.tenantPrisma.client.whatsAppChannel.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
     return channels.map(toChannelDto);
   }
 
@@ -29,7 +31,9 @@ export class ChannelsService {
    * from a controller; use getOne()/the mapped create()/update() instead.
    */
   async findOneOrThrow(id: string): Promise<WhatsAppChannel> {
-    const channel = await this.tenantPrisma.client.whatsAppChannel.findUnique({ where: { id } });
+    const channel = await this.tenantPrisma.client.whatsAppChannel.findUnique({
+      where: { id },
+    });
     if (!channel) throw new NotFoundException('WhatsApp channel not found');
     return channel;
   }

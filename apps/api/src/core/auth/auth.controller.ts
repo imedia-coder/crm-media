@@ -47,19 +47,32 @@ export class AuthController {
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('mfa/enable')
-  async enableMfa(@CurrentUser() user: AuthenticatedUser, @Body() dto: MfaCodeDto) {
+  async enableMfa(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: MfaCodeDto,
+  ) {
     await this.authService.enableMfa(user.id, dto.code);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('mfa/disable')
-  async disableMfa(@CurrentUser() user: AuthenticatedUser, @Body() dto: MfaCodeDto) {
+  async disableMfa(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: MfaCodeDto,
+  ) {
     await this.authService.disableMfa(user.id, dto.code);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('change-password')
-  async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() dto: ChangePasswordDto) {
-    await this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
+  async changePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    await this.authService.changePassword(
+      user.id,
+      dto.currentPassword,
+      dto.newPassword,
+    );
   }
 }

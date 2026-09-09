@@ -1,4 +1,13 @@
-import { IsDateString, IsInt, IsNumber, IsOptional, IsString, Max, Min, MinLength } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  MinLength,
+} from 'class-validator';
 
 export class CreateDealDto {
   @IsString()

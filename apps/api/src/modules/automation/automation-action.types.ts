@@ -15,7 +15,11 @@ export interface CreateProjectAction {
 
 export interface CreateTaskAction {
   type: 'CREATE_TASK';
-  config: { titleTemplate: string; useCreatedProject: boolean; projectId?: string };
+  config: {
+    titleTemplate: string;
+    useCreatedProject: boolean;
+    projectId?: string;
+  };
 }
 
 export interface SendNotificationAction {
@@ -23,7 +27,8 @@ export interface SendNotificationAction {
   config: { titleTemplate: string };
 }
 
-export type AutomationAction = CreateProjectAction | CreateTaskAction | SendNotificationAction;
+export type AutomationAction =
+  CreateProjectAction | CreateTaskAction | SendNotificationAction;
 
 const PLACEHOLDERS: Record<string, keyof AutomationContext> = {
   companyName: 'companyName',
@@ -33,7 +38,10 @@ const PLACEHOLDERS: Record<string, keyof AutomationContext> = {
 };
 
 /** Replaces {{companyName}}, {{dealTitle}}, {{quoteNumber}}, {{invoiceNumber}} with context values. */
-export function renderTemplate(template: string, context: AutomationContext): string {
+export function renderTemplate(
+  template: string,
+  context: AutomationContext,
+): string {
   return template.replace(/\{\{(\w+)\}\}/g, (match, key: string) => {
     const field = PLACEHOLDERS[key];
     if (!field) return match;

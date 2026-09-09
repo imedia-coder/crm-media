@@ -18,7 +18,10 @@ export class NotificationsController {
   }
 
   @Post(':id/read')
-  async markRead(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+  async markRead(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     await this.notificationsService.markRead(id, user.id);
   }
 

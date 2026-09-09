@@ -12,9 +12,14 @@ export interface WhapiSendResult {
  */
 @Injectable()
 export class WhapiClientService {
-  private readonly baseUrl = process.env.WHAPI_BASE_URL ?? 'https://gate.whapi.cloud';
+  private readonly baseUrl =
+    process.env.WHAPI_BASE_URL ?? 'https://gate.whapi.cloud';
 
-  async sendTextMessage(token: string, to: string, body: string): Promise<WhapiSendResult> {
+  async sendTextMessage(
+    token: string,
+    to: string,
+    body: string,
+  ): Promise<WhapiSendResult> {
     const response = await fetch(`${this.baseUrl}/messages/text`, {
       method: 'POST',
       headers: {
@@ -25,7 +30,9 @@ export class WhapiClientService {
     });
 
     if (!response.ok) {
-      throw new Error(`Whapi send failed (${response.status}): ${await response.text()}`);
+      throw new Error(
+        `Whapi send failed (${response.status}): ${await response.text()}`,
+      );
     }
 
     const data = (await response.json()) as { message?: { id?: string } };

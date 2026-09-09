@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { computeTotals } from '../billing/money.util';
 import { renderDocumentPdf } from '../billing/pdf.util';
 import { StorageService } from '../../core/storage/storage.service';
@@ -18,14 +22,18 @@ export class PortalService {
       where: { id: userId },
       select: { id: true, email: true, firstName: true, lastName: true },
     });
-    const company = await this.tenantPrisma.client.company.findUniqueOrThrow({ where: { id: companyId } });
+    const company = await this.tenantPrisma.client.company.findUniqueOrThrow({
+      where: { id: companyId },
+    });
     return { user, company };
   }
 
   listProjects(companyId: string) {
     return this.tenantPrisma.client.project.findMany({
       where: { companyId },
-      include: { manager: { select: { firstName: true, lastName: true, email: true } } },
+      include: {
+        manager: { select: { firstName: true, lastName: true, email: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -35,7 +43,9 @@ export class PortalService {
       where: { id: projectId, companyId },
       include: {
         manager: { select: { firstName: true, lastName: true, email: true } },
-        tasks: { select: { id: true, title: true, status: true, dueDate: true } },
+        tasks: {
+          select: { id: true, title: true, status: true, dueDate: true },
+        },
       },
     });
     if (!project) throw new NotFoundException('Project not found');
@@ -50,7 +60,11 @@ export class PortalService {
     });
   }
 
-  async getDownloadableVersionOrThrow(companyId: string, documentId: string, versionNumber: number) {
+  async getDownloadableVersionOrThrow(
+    companyId: string,
+    documentId: string,
+    versionNumber: number,
+  ) {
     const version = await this.tenantPrisma.client.documentVersion.findFirst({
       where: {
         versionNumber,
@@ -120,11 +134,22 @@ export class PortalService {
   async getInvoiceOrThrow(companyId: string, invoiceId: string) {
     const invoice = await this.getOwnInvoiceOrThrow(companyId, invoiceId);
     const totals = computeTotals(invoice.lines);
-    const amountPaid = invoice.payments.reduce((sum, p) => sum + Number(p.amount), 0);
-    return { ...invoice, totals, amountPaid, amountDue: totals.total - amountPaid };
+    const amountPaid = invoice.payments.reduce(
+      (sum, p) => sum + Number(p.amount),
+      0,
+    );
+    return {
+      ...invoice,
+      totals,
+      amountPaid,
+      amountDue: totals.total - amountPaid,
+    };
   }
 
-  async renderInvoicePdf(companyId: string, invoiceId: string): Promise<Buffer> {
+  async renderInvoicePdf(
+    companyId: string,
+    invoiceId: string,
+  ): Promise<Buffer> {
     const invoice = await this.getOwnInvoiceOrThrow(companyId, invoiceId);
     const tenant = await this.tenantPrisma.client.tenant.findUnique({
       where: { id: this.tenantPrisma.tenantId },

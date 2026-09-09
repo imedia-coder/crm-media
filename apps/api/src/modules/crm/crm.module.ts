@@ -13,7 +13,17 @@ import { PipelineStagesService } from './pipeline-stages/pipeline-stages.service
 
 @Module({
   imports: [TenancyModule, AuthModule, AutomationModule],
-  controllers: [CompaniesController, ContactsController, PipelineStagesController, DealsController],
-  providers: [CompaniesService, ContactsService, PipelineStagesService, DealsService],
+  controllers: [
+    CompaniesController,
+    ContactsController,
+    PipelineStagesController,
+    DealsController,
+  ],
+  providers: [
+    CompaniesService,
+    ContactsService,
+    PipelineStagesService,
+    DealsService,
+  ],
 })
 export class CrmModule {}

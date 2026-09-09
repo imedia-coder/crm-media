@@ -1,4 +1,6 @@
 import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateQuoteDto } from './create-quote.dto';
 
-export class UpdateQuoteDto extends PartialType(OmitType(CreateQuoteDto, ['companyId'] as const)) {}
+export class UpdateQuoteDto extends PartialType(
+  OmitType(CreateQuoteDto, ['companyId'] as const),
+) {}

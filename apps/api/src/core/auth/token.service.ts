@@ -33,7 +33,8 @@ export class TokenService {
     };
     return this.jwt.sign(payload, {
       secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: (process.env.JWT_ACCESS_TTL ?? '15m') as `${number}${'s' | 'm' | 'h' | 'd'}`,
+      expiresIn: (process.env.JWT_ACCESS_TTL ??
+        '15m') as `${number}${'s' | 'm' | 'h' | 'd'}`,
     });
   }
 
@@ -51,10 +52,10 @@ export class TokenService {
   }
 
   async issueTokenPair(user: AuthenticatedUser): Promise<TokenPair> {
-    const [accessToken, refreshToken] = await Promise.all([
-      this.signAccessToken(user),
-      this.issueRefreshToken(user.id),
-    ]);
+    // signAccessToken est synchrone (JWT signe en memoire) — seul
+    // issueRefreshToken touche la base et a besoin d'un await.
+    const accessToken = this.signAccessToken(user);
+    const refreshToken = await this.issueRefreshToken(user.id);
     return { accessToken, refreshToken };
   }
 
@@ -62,7 +63,9 @@ export class TokenService {
     const tokenHash = this.hash(refreshToken);
     const record = await this.platformPrisma.refreshToken.findUnique({
       where: { tokenHash },
-      include: { user: { include: { role: { include: { permissions: true } } } } },
+      include: {
+        user: { include: { role: { include: { permissions: true } } } },
+      },
     });
 
     if (!record || record.revokedAt || record.expiresAt < new Date()) {
@@ -91,7 +94,9 @@ export class TokenService {
     const match = /^(\d+)([smhd])$/.exec(ttl);
     if (!match) return 7 * 24 * 60 * 60 * 1000;
     const value = Number(match[1]);
-    const unitMs = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 }[match[2] as 's' | 'm' | 'h' | 'd'];
+    const unitMs = { s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 }[
+      match[2] as 's' | 'm' | 'h' | 'd'
+    ];
     return value * unitMs;
   }
 }

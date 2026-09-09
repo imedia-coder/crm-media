@@ -14,9 +14,14 @@ import { PrismaClient } from '@prisma/client';
  * this service instead of the tenant-scoped PrismaService.
  */
 @Injectable()
-export class PlatformPrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PlatformPrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   constructor() {
-    super({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
+    super({
+      adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+    });
   }
 
   async onModuleInit() {

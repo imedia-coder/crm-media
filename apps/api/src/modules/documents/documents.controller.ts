@@ -44,7 +44,9 @@ export class DocumentsController {
 
   @RequirePermissions(DOCUMENT_PERMISSIONS.DOCUMENTS_WRITE)
   @Post()
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } }),
+  )
   upload(
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: UploadDocumentDto,
@@ -55,7 +57,9 @@ export class DocumentsController {
 
   @RequirePermissions(DOCUMENT_PERMISSIONS.DOCUMENTS_WRITE)
   @Post(':id/versions')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } }),
+  )
   addVersion(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
@@ -71,12 +75,17 @@ export class DocumentsController {
     @Param('versionNumber', ParseIntPipe) versionNumber: number,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const version = await this.documentsService.getVersionOrThrow(id, versionNumber);
+    const version = await this.documentsService.getVersionOrThrow(
+      id,
+      versionNumber,
+    );
     res.set({
       'Content-Type': version.mimeType,
       'Content-Disposition': `attachment; filename="${encodeURIComponent(version.originalName)}"`,
     });
-    return new StreamableFile(await this.documentsService.readStream(version.storageKey));
+    return new StreamableFile(
+      await this.documentsService.readStream(version.storageKey),
+    );
   }
 
   @RequirePermissions(DOCUMENT_PERMISSIONS.DOCUMENTS_WRITE)

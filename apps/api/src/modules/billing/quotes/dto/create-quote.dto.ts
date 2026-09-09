@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsOptional,
+  IsString,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import { LineItemDto } from '../../dto/line-item.dto';
 
 export class CreateQuoteDto {

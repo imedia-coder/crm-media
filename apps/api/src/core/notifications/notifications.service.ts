@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { TenantPrismaService } from '../tenancy/tenant-prisma.service';
 
-type NotificationType = 'TASK_ASSIGNED' | 'QUOTE_ACCEPTED' | 'INVOICE_PAID' | 'CONTENT_VALIDATION_NEEDED' | 'GENERIC';
+type NotificationType =
+  | 'TASK_ASSIGNED'
+  | 'QUOTE_ACCEPTED'
+  | 'INVOICE_PAID'
+  | 'CONTENT_VALIDATION_NEEDED'
+  | 'GENERIC';
 
 @Injectable()
 export class NotificationsService {
@@ -65,7 +70,9 @@ export class NotificationsService {
   }
 
   async unreadCount(userId: string) {
-    return this.tenantPrisma.client.notification.count({ where: { userId, readAt: null } });
+    return this.tenantPrisma.client.notification.count({
+      where: { userId, readAt: null },
+    });
   }
 
   async markRead(id: string, userId: string) {

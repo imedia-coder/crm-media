@@ -37,7 +37,9 @@ export class MediaController {
 
   @RequirePermissions(MARKETING_PERMISSIONS.MEDIA_WRITE)
   @Post()
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_FILE_SIZE_BYTES } }),
+  )
   upload(
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: UploadMediaDto,
@@ -48,13 +50,18 @@ export class MediaController {
 
   @RequirePermissions(MARKETING_PERMISSIONS.MEDIA_READ)
   @Get(':id/download')
-  async download(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+  async download(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const asset = await this.mediaService.findOneOrThrow(id);
     res.set({
       'Content-Type': asset.mimeType,
       'Content-Disposition': `inline; filename="${encodeURIComponent(asset.name)}"`,
     });
-    return new StreamableFile(await this.mediaService.readStream(asset.storageKey));
+    return new StreamableFile(
+      await this.mediaService.readStream(asset.storageKey),
+    );
   }
 
   @RequirePermissions(MARKETING_PERMISSIONS.MEDIA_WRITE)

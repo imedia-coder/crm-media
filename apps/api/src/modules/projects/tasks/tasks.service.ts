@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { NotificationsService } from '../../../core/notifications/notifications.service';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
 import { AddDependencyDto } from './dto/add-dependency.dto';
@@ -21,7 +25,10 @@ export class TasksService {
         ...(query.assigneeId ? { assigneeId: query.assigneeId } : {}),
         ...(query.status ? { status: query.status as never } : {}),
       },
-      include: { assignee: true, _count: { select: { subtasks: true, timeEntries: true } } },
+      include: {
+        assignee: true,
+        _count: { select: { subtasks: true, timeEntries: true } },
+      },
       orderBy: { createdAt: 'asc' },
     });
   }
@@ -43,13 +50,19 @@ export class TasksService {
 
   async create(dto: CreateTaskDto) {
     const client = this.tenantPrisma.client;
-    const project = await client.project.findUnique({ where: { id: dto.projectId } });
+    const project = await client.project.findUnique({
+      where: { id: dto.projectId },
+    });
     if (!project) throw new NotFoundException('Project not found');
 
     if (dto.parentTaskId) {
-      const parent = await client.task.findUnique({ where: { id: dto.parentTaskId } });
+      const parent = await client.task.findUnique({
+        where: { id: dto.parentTaskId },
+      });
       if (!parent || parent.projectId !== dto.projectId) {
-        throw new BadRequestException('Parent task must belong to the same project');
+        throw new BadRequestException(
+          'Parent task must belong to the same project',
+        );
       }
     }
 
@@ -69,9 +82,14 @@ export class TasksService {
     });
 
     if (task.assigneeId) {
-      await this.notifications.notifyUser(task.assigneeId, 'TASK_ASSIGNED', `Nouvelle tâche : ${task.title}`, {
-        link: `/dashboard/projects/${task.projectId}`,
-      });
+      await this.notifications.notifyUser(
+        task.assigneeId,
+        'TASK_ASSIGNED',
+        `Nouvelle tâche : ${task.title}`,
+        {
+          link: `/dashboard/projects/${task.projectId}`,
+        },
+      );
     }
 
     return task;
@@ -88,9 +106,14 @@ export class TasksService {
     });
 
     if (dto.assigneeId && dto.assigneeId !== existing.assigneeId) {
-      await this.notifications.notifyUser(dto.assigneeId, 'TASK_ASSIGNED', `Nouvelle tâche : ${task.title}`, {
-        link: `/dashboard/projects/${task.projectId}`,
-      });
+      await this.notifications.notifyUser(
+        dto.assigneeId,
+        'TASK_ASSIGNED',
+        `Nouvelle tâche : ${task.title}`,
+        {
+          link: `/dashboard/projects/${task.projectId}`,
+        },
+      );
     }
 
     return task;
@@ -110,11 +133,15 @@ export class TasksService {
     // against the same underlying connection makes the driver choke.
     const client = this.tenantPrisma.client;
     const task = await client.task.findUnique({ where: { id } });
-    const dependsOn = await client.task.findUnique({ where: { id: dto.dependsOnTaskId } });
+    const dependsOn = await client.task.findUnique({
+      where: { id: dto.dependsOnTaskId },
+    });
     if (!task) throw new NotFoundException('Task not found');
     if (!dependsOn) throw new NotFoundException('Dependency task not found');
     if (task.projectId !== dependsOn.projectId) {
-      throw new BadRequestException('Dependencies must belong to the same project');
+      throw new BadRequestException(
+        'Dependencies must belong to the same project',
+      );
     }
     return client.taskDependency.create({
       data: { taskId: id, dependsOnTaskId: dto.dependsOnTaskId },

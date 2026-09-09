@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { NotificationsService } from '../../../core/notifications/notifications.service';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
 import { AutomationService } from '../../automation/automation.service';
@@ -66,7 +71,9 @@ export class QuotesService {
   }
 
   async update(id: string, dto: UpdateQuoteDto) {
-    const existing = await this.tenantPrisma.client.quote.findUnique({ where: { id } });
+    const existing = await this.tenantPrisma.client.quote.findUnique({
+      where: { id },
+    });
     if (!existing) throw new NotFoundException('Quote not found');
     if (existing.status !== 'DRAFT') {
       throw new ConflictException('Only draft quotes can be edited');
@@ -110,15 +117,24 @@ export class QuotesService {
 
     let deal: { ownerId: string | null; title: string } | null = null;
     if (quote.dealId) {
-      deal = await this.tenantPrisma.client.deal.findUnique({ where: { id: quote.dealId } });
+      deal = await this.tenantPrisma.client.deal.findUnique({
+        where: { id: quote.dealId },
+      });
       if (deal?.ownerId) {
-        await this.notifications.notifyUser(deal.ownerId, 'QUOTE_ACCEPTED', `Devis accepté : ${quote.number}`, {
-          link: `/dashboard/billing/quotes`,
-        });
+        await this.notifications.notifyUser(
+          deal.ownerId,
+          'QUOTE_ACCEPTED',
+          `Devis accepté : ${quote.number}`,
+          {
+            link: `/dashboard/billing/quotes`,
+          },
+        );
       }
     }
 
-    const company = await this.tenantPrisma.client.company.findUnique({ where: { id: quote.companyId } });
+    const company = await this.tenantPrisma.client.company.findUnique({
+      where: { id: quote.companyId },
+    });
     await this.automation.fire('QUOTE_ACCEPTED', {
       companyId: quote.companyId,
       companyName: company?.name ?? null,
@@ -134,17 +150,30 @@ export class QuotesService {
     return this.transition(id, 'SENT', 'DECLINED');
   }
 
-  private async transition(id: string, expectedStatus: string, nextStatus: string) {
-    const quote = await this.tenantPrisma.client.quote.findUnique({ where: { id } });
+  private async transition(
+    id: string,
+    expectedStatus: string,
+    nextStatus: string,
+  ) {
+    const quote = await this.tenantPrisma.client.quote.findUnique({
+      where: { id },
+    });
     if (!quote) throw new NotFoundException('Quote not found');
     if (quote.status !== expectedStatus) {
-      throw new ConflictException(`Quote must be in status ${expectedStatus} (currently ${quote.status})`);
+      throw new ConflictException(
+        `Quote must be in status ${expectedStatus} (currently ${quote.status})`,
+      );
     }
-    return this.tenantPrisma.client.quote.update({ where: { id }, data: { status: nextStatus as never } });
+    return this.tenantPrisma.client.quote.update({
+      where: { id },
+      data: { status: nextStatus as never },
+    });
   }
 
   async remove(id: string) {
-    const quote = await this.tenantPrisma.client.quote.findUnique({ where: { id } });
+    const quote = await this.tenantPrisma.client.quote.findUnique({
+      where: { id },
+    });
     if (!quote) throw new NotFoundException('Quote not found');
     if (quote.status !== 'DRAFT') {
       throw new ConflictException('Only draft quotes can be deleted');

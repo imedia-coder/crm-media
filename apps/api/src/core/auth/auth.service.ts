@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { DEFAULT_PIPELINE_STAGES } from '../../modules/crm/pipeline-stages/default-stages';
 import { PlatformPrismaService } from '../prisma/platform-prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -61,7 +65,9 @@ export class AuthService {
 
     const { tenant, user } = await this.platformPrisma
       .$transaction(async (tx) => {
-        const tenant = await tx.tenant.create({ data: { name: dto.tenantName, slug } });
+        const tenant = await tx.tenant.create({
+          data: { name: dto.tenantName, slug },
+        });
         const role = await tx.role.create({
           data: {
             tenantId: tenant.id,
@@ -82,12 +88,15 @@ export class AuthService {
           include: { role: { include: { permissions: true } } },
         });
         await tx.pipelineStage.createMany({
-          data: DEFAULT_PIPELINE_STAGES.map((stage) => ({ ...stage, tenantId: tenant.id })),
+          data: DEFAULT_PIPELINE_STAGES.map((stage) => ({
+            ...stage,
+            tenantId: tenant.id,
+          })),
         });
         return { tenant, user };
       })
       .catch((error) => {
-        if (error?.code === 'P2002') {
+        if ((error as { code?: string })?.code === 'P2002') {
           throw new ConflictException('Email already in use');
         }
         throw error;
@@ -97,7 +106,12 @@ export class AuthService {
     const tokens = await this.tokenService.issueTokenPair(authenticatedUser);
     return {
       tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name },
-      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
       ...tokens,
     };
   }
@@ -105,7 +119,9 @@ export class AuthService {
   async login(dto: LoginDto) {
     const invalid = () => new UnauthorizedException('Invalid credentials');
 
-    const tenant = await this.platformPrisma.tenant.findUnique({ where: { slug: dto.tenantSlug } });
+    const tenant = await this.platformPrisma.tenant.findUnique({
+      where: { slug: dto.tenantSlug },
+    });
     if (!tenant) throw invalid();
 
     const user = await this.platformPrisma.user.findUnique({
@@ -114,11 +130,17 @@ export class AuthService {
     });
     if (!user || user.status !== 'ACTIVE') throw invalid();
 
-    const passwordMatches = await this.passwordService.compare(dto.password, user.passwordHash);
+    const passwordMatches = await this.passwordService.compare(
+      dto.password,
+      user.passwordHash,
+    );
     if (!passwordMatches) throw invalid();
 
     if (user.mfaEnabledAt) {
-      if (!dto.mfaCode || !this.mfaService.verify(dto.mfaCode, user.mfaSecret as string)) {
+      if (
+        !dto.mfaCode ||
+        !this.mfaService.verify(dto.mfaCode, user.mfaSecret as string)
+      ) {
         throw new UnauthorizedException('Valid MFA code required');
       }
     }
@@ -127,7 +149,12 @@ export class AuthService {
     const tokens = await this.tokenService.issueTokenPair(authenticatedUser);
     return {
       tenant: { id: tenant.id, slug: tenant.slug, name: tenant.name },
-      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
       ...tokens,
     };
   }
@@ -143,24 +170,36 @@ export class AuthService {
   }
 
   async setupMfa(userId: string) {
-    const user = await this.platformPrisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const user = await this.platformPrisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
     const secret = this.mfaService.generateSecret();
-    await this.platformPrisma.user.update({ where: { id: userId }, data: { mfaSecret: secret } });
+    await this.platformPrisma.user.update({
+      where: { id: userId },
+      data: { mfaSecret: secret },
+    });
     const otpAuthUrl = this.mfaService.keyUri(user.email, secret);
     const qrCode = await this.mfaService.toQrCodeDataUrl(otpAuthUrl);
     return { secret, otpAuthUrl, qrCode };
   }
 
   async enableMfa(userId: string, code: string): Promise<void> {
-    const user = await this.platformPrisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const user = await this.platformPrisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
     if (!user.mfaSecret || !this.mfaService.verify(code, user.mfaSecret)) {
       throw new UnauthorizedException('Invalid MFA code');
     }
-    await this.platformPrisma.user.update({ where: { id: userId }, data: { mfaEnabledAt: new Date() } });
+    await this.platformPrisma.user.update({
+      where: { id: userId },
+      data: { mfaEnabledAt: new Date() },
+    });
   }
 
   async disableMfa(userId: string, code: string): Promise<void> {
-    const user = await this.platformPrisma.user.findUniqueOrThrow({ where: { id: userId } });
+    const user = await this.platformPrisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
     if (!user.mfaSecret || !this.mfaService.verify(code, user.mfaSecret)) {
       throw new UnauthorizedException('Invalid MFA code');
     }
@@ -170,13 +209,25 @@ export class AuthService {
     });
   }
 
-  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
-    const user = await this.platformPrisma.user.findUniqueOrThrow({ where: { id: userId } });
-    const matches = await this.passwordService.compare(currentPassword, user.passwordHash);
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<void> {
+    const user = await this.platformPrisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    const matches = await this.passwordService.compare(
+      currentPassword,
+      user.passwordHash,
+    );
     if (!matches) {
       throw new UnauthorizedException('Current password is incorrect');
     }
     const passwordHash = await this.passwordService.hash(newPassword);
-    await this.platformPrisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    await this.platformPrisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
   }
 }

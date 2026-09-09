@@ -12,6 +12,11 @@ import { WhapiClientService } from './whapi-client.service';
 @Module({
   imports: [TenancyModule, AuthModule],
   controllers: [ChannelsController, ConversationsController, WebhookController],
-  providers: [ChannelsService, ConversationsService, WebhookService, WhapiClientService],
+  providers: [
+    ChannelsService,
+    ConversationsService,
+    WebhookService,
+    WhapiClientService,
+  ],
 })
 export class WhatsAppModule {}

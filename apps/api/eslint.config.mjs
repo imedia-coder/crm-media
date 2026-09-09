@@ -29,6 +29,11 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
+      // Convention deja utilisee dans le code (ex. destructurer un champ
+      // sensible hors d'un DTO : `const { secret: _secret, ...rest } = x`) :
+      // un identifiant prefixe par _ signale une variable volontairement
+      // inutilisee, pas une erreur.
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       "prettier/prettier": ["error", { endOfLine: "auto" }],
     },
   },

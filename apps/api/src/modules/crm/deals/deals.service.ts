@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
 import { AutomationService } from '../../automation/automation.service';
 import { CreateDealDto } from './dto/create-deal.dto';
@@ -31,7 +35,10 @@ export class DealsService {
         stage: true,
         company: true,
         contact: true,
-        stageHistory: { include: { stage: true }, orderBy: { enteredAt: 'asc' } },
+        stageHistory: {
+          include: { stage: true },
+          orderBy: { enteredAt: 'asc' },
+        },
       },
     });
     if (!deal) throw new NotFoundException('Deal not found');
@@ -42,9 +49,13 @@ export class DealsService {
     return this.tenantPrisma.transaction(async (tx) => {
       let stageId = dto.stageId;
       if (!stageId) {
-        const firstStage = await tx.pipelineStage.findFirst({ orderBy: { order: 'asc' } });
+        const firstStage = await tx.pipelineStage.findFirst({
+          orderBy: { order: 'asc' },
+        });
         if (!firstStage) {
-          throw new BadRequestException('No pipeline stage configured for this tenant yet');
+          throw new BadRequestException(
+            'No pipeline stage configured for this tenant yet',
+          );
         }
         stageId = firstStage.id;
       }
@@ -61,7 +72,9 @@ export class DealsService {
           winProbability: dto.winProbability,
           source: dto.source,
           sourceSocialNetwork: dto.sourceSocialNetwork,
-          nextFollowUpAt: dto.nextFollowUpAt ? new Date(dto.nextFollowUpAt) : undefined,
+          nextFollowUpAt: dto.nextFollowUpAt
+            ? new Date(dto.nextFollowUpAt)
+            : undefined,
         },
       });
       await tx.dealStageHistory.create({ data: { dealId: deal.id, stageId } });
@@ -75,7 +88,9 @@ export class DealsService {
       where: { id },
       data: {
         ...dto,
-        nextFollowUpAt: dto.nextFollowUpAt ? new Date(dto.nextFollowUpAt) : undefined,
+        nextFollowUpAt: dto.nextFollowUpAt
+          ? new Date(dto.nextFollowUpAt)
+          : undefined,
       },
     });
   }
@@ -90,11 +105,18 @@ export class DealsService {
       const deal = await tx.deal.findUnique({ where: { id } });
       if (!deal) throw new NotFoundException('Deal not found');
 
-      const targetStage = await tx.pipelineStage.findUnique({ where: { id: dto.stageId } });
+      const targetStage = await tx.pipelineStage.findUnique({
+        where: { id: dto.stageId },
+      });
       if (!targetStage) throw new NotFoundException('Pipeline stage not found');
 
-      const updated = await tx.deal.update({ where: { id }, data: { stageId: dto.stageId } });
-      await tx.dealStageHistory.create({ data: { dealId: id, stageId: dto.stageId } });
+      const updated = await tx.deal.update({
+        where: { id },
+        data: { stageId: dto.stageId },
+      });
+      await tx.dealStageHistory.create({
+        data: { dealId: id, stageId: dto.stageId },
+      });
 
       let companyName: string | null = null;
       if (targetStage.isWon && deal.companyId) {
@@ -102,7 +124,9 @@ export class DealsService {
           where: { id: deal.companyId, isClient: false },
           data: { isClient: true, clientSince: new Date() },
         });
-        const company = await tx.company.findUnique({ where: { id: deal.companyId } });
+        const company = await tx.company.findUnique({
+          where: { id: deal.companyId },
+        });
         companyName = company?.name ?? null;
       }
 

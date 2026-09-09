@@ -1,4 +1,11 @@
-import { IsArray, IsBoolean, IsIn, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 import { AutomationAction } from '../automation-action.types';
 
 const TRIGGERS = ['QUOTE_ACCEPTED', 'INVOICE_PAID', 'DEAL_WON'] as const;

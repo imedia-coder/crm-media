@@ -1,5 +1,11 @@
 import { Type } from 'class-transformer';
-import { ArrayMinSize, IsArray, IsInt, IsString, ValidateNested } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsInt,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
 class StageOrderEntry {
   @IsString()

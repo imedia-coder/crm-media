@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PasswordService } from '../../../core/auth/password.service';
 import { TenantPrismaService } from '../../../core/tenancy/tenant-prisma.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
@@ -46,9 +50,14 @@ export class CompaniesService {
   async update(id: string, dto: UpdateCompanyDto) {
     const existing = await this.findOneOrThrow(id);
     if (existing.anonymizedAt) {
-      throw new ConflictException('This company has been anonymized (RGPD) and can no longer be edited');
+      throw new ConflictException(
+        'This company has been anonymized (RGPD) and can no longer be edited',
+      );
     }
-    return this.tenantPrisma.client.company.update({ where: { id }, data: dto });
+    return this.tenantPrisma.client.company.update({
+      where: { id },
+      data: dto,
+    });
   }
 
   async remove(id: string) {
@@ -65,9 +74,20 @@ export class CompaniesService {
       where: { id },
       include: {
         contacts: true,
-        deals: { select: { id: true, title: true, createdAt: true, stage: { select: { name: true } } } },
-        quotes: { select: { id: true, number: true, status: true, createdAt: true } },
-        invoices: { select: { id: true, number: true, status: true, createdAt: true } },
+        deals: {
+          select: {
+            id: true,
+            title: true,
+            createdAt: true,
+            stage: { select: { name: true } },
+          },
+        },
+        quotes: {
+          select: { id: true, number: true, status: true, createdAt: true },
+        },
+        invoices: {
+          select: { id: true, number: true, status: true, createdAt: true },
+        },
       },
     });
     if (!company) throw new NotFoundException('Company not found');
@@ -91,7 +111,11 @@ export class CompaniesService {
         consentGivenAt: c.consentGivenAt,
         consentSource: c.consentSource,
       })),
-      associatedDeals: company.deals.map((d) => ({ title: d.title, stage: d.stage.name, createdAt: d.createdAt })),
+      associatedDeals: company.deals.map((d) => ({
+        title: d.title,
+        stage: d.stage.name,
+        createdAt: d.createdAt,
+      })),
       quotes: company.quotes,
       invoices: company.invoices,
       recordCreatedAt: company.createdAt,
@@ -167,14 +191,21 @@ export class CompaniesService {
         },
       })
       .catch((error) => {
-        if (error?.code === 'P2002') {
-          throw new ConflictException('A user with this email already exists for this tenant');
+        if ((error as { code?: string })?.code === 'P2002') {
+          throw new ConflictException(
+            'A user with this email already exists for this tenant',
+          );
         }
         throw error;
       });
 
     return {
-      user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+      },
       temporaryPassword,
     };
   }

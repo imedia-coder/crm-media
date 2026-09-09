@@ -27,7 +27,9 @@ export class TenantPrismaService {
   private requireTenantId(): string {
     const tenantId = this.request.user?.tenantId;
     if (!tenantId) {
-      throw new Error('TenantPrismaService used outside of an authenticated, tenant-scoped request');
+      throw new Error(
+        'TenantPrismaService used outside of an authenticated, tenant-scoped request',
+      );
     }
     return tenantId;
   }

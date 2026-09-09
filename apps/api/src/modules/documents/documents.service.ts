@@ -23,14 +23,21 @@ export class DocumentsService {
     const document = await this.tenantPrisma.client.document.findUnique({
       where: { id },
       include: {
-        versions: { orderBy: { versionNumber: 'desc' }, include: { uploadedBy: true } },
+        versions: {
+          orderBy: { versionNumber: 'desc' },
+          include: { uploadedBy: true },
+        },
       },
     });
     if (!document) throw new NotFoundException('Document not found');
     return document;
   }
 
-  async upload(file: Express.Multer.File, dto: UploadDocumentDto, uploaderId: string) {
+  async upload(
+    file: Express.Multer.File,
+    dto: UploadDocumentDto,
+    uploaderId: string,
+  ) {
     const tenantId = this.tenantPrisma.tenantId;
     return this.tenantPrisma.transaction(async (tx) => {
       const document = await tx.document.create({
@@ -40,7 +47,12 @@ export class DocumentsService {
           name: dto.name ?? file.originalname,
         },
       });
-      const key = this.storage.buildKey(tenantId, document.id, 1, file.originalname);
+      const key = this.storage.buildKey(
+        tenantId,
+        document.id,
+        1,
+        file.originalname,
+      );
       await this.storage.save(key, file.buffer);
       const version = await tx.documentVersion.create({
         data: {
@@ -57,7 +69,11 @@ export class DocumentsService {
     });
   }
 
-  async addVersion(documentId: string, file: Express.Multer.File, uploaderId: string) {
+  async addVersion(
+    documentId: string,
+    file: Express.Multer.File,
+    uploaderId: string,
+  ) {
     const tenantId = this.tenantPrisma.tenantId;
     return this.tenantPrisma.transaction(async (tx) => {
       const document = await tx.document.findUnique({
@@ -67,7 +83,12 @@ export class DocumentsService {
       if (!document) throw new NotFoundException('Document not found');
 
       const nextVersionNumber = (document.versions[0]?.versionNumber ?? 0) + 1;
-      const key = this.storage.buildKey(tenantId, documentId, nextVersionNumber, file.originalname);
+      const key = this.storage.buildKey(
+        tenantId,
+        documentId,
+        nextVersionNumber,
+        file.originalname,
+      );
       await this.storage.save(key, file.buffer);
 
       return tx.documentVersion.create({
@@ -104,7 +125,9 @@ export class DocumentsService {
 
   async remove(id: string) {
     const document = await this.findOneOrThrow(id);
-    await Promise.all(document.versions.map((v) => this.storage.delete(v.storageKey)));
+    await Promise.all(
+      document.versions.map((v) => this.storage.delete(v.storageKey)),
+    );
     await this.tenantPrisma.client.document.delete({ where: { id } });
   }
 }

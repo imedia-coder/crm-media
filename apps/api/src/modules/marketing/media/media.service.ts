@@ -22,9 +22,18 @@ export class MediaService {
     });
   }
 
-  async upload(file: Express.Multer.File, dto: UploadMediaDto, uploaderId: string) {
+  async upload(
+    file: Express.Multer.File,
+    dto: UploadMediaDto,
+    uploaderId: string,
+  ) {
     const tenantId = this.tenantPrisma.tenantId;
-    const key = this.storage.buildKey(tenantId, 'media', Date.now(), file.originalname);
+    const key = this.storage.buildKey(
+      tenantId,
+      'media',
+      Date.now(),
+      file.originalname,
+    );
     await this.storage.save(key, file.buffer);
 
     return this.tenantPrisma.client.mediaAsset.create({
@@ -34,7 +43,12 @@ export class MediaService {
         storageKey: key,
         mimeType: file.mimetype,
         sizeBytes: file.size,
-        tags: dto.tags ? dto.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+        tags: dto.tags
+          ? dto.tags
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : [],
         campaignId: dto.campaignId,
         contentItemId: dto.contentItemId,
         uploadedById: uploaderId,
@@ -47,14 +61,18 @@ export class MediaService {
   }
 
   async remove(id: string) {
-    const asset = await this.tenantPrisma.client.mediaAsset.findUnique({ where: { id } });
+    const asset = await this.tenantPrisma.client.mediaAsset.findUnique({
+      where: { id },
+    });
     if (!asset) throw new NotFoundException('Media asset not found');
     await this.storage.delete(asset.storageKey);
     await this.tenantPrisma.client.mediaAsset.delete({ where: { id } });
   }
 
   async findOneOrThrow(id: string) {
-    const asset = await this.tenantPrisma.client.mediaAsset.findUnique({ where: { id } });
+    const asset = await this.tenantPrisma.client.mediaAsset.findUnique({
+      where: { id },
+    });
     if (!asset) throw new NotFoundException('Media asset not found');
     return asset;
   }

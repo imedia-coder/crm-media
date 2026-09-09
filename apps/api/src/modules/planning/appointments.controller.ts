@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { CurrentUser } from '../../core/auth/decorators/current-user.decorator';
 import { RequirePermissions } from '../../core/auth/decorators/permissions.decorator';
 import { PLANNING_PERMISSIONS } from '../../core/auth/permissions.constants';
@@ -26,7 +37,10 @@ export class AppointmentsController {
 
   @RequirePermissions(PLANNING_PERMISSIONS.APPOINTMENTS_WRITE)
   @Post()
-  create(@Body() dto: CreateAppointmentDto, @CurrentUser() user: AuthenticatedUser) {
+  create(
+    @Body() dto: CreateAppointmentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.appointmentsService.create(dto, user.id);
   }
 

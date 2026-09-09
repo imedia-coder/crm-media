@@ -54,7 +54,9 @@ export class PortalController {
       'Content-Type': version.mimeType,
       'Content-Disposition': `attachment; filename="${encodeURIComponent(version.originalName)}"`,
     });
-    return new StreamableFile(await this.portalService.readStream(version.storageKey));
+    return new StreamableFile(
+      await this.portalService.readStream(version.storageKey),
+    );
   }
 
   @Get('quotes')
@@ -68,7 +70,10 @@ export class PortalController {
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const buffer = await this.portalService.renderQuotePdf(user.companyId as string, id);
+    const buffer = await this.portalService.renderQuotePdf(
+      user.companyId as string,
+      id,
+    );
     res.set({ 'Content-Type': 'application/pdf' });
     return new StreamableFile(buffer);
   }
@@ -89,7 +94,10 @@ export class PortalController {
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const buffer = await this.portalService.renderInvoicePdf(user.companyId as string, id);
+    const buffer = await this.portalService.renderInvoicePdf(
+      user.companyId as string,
+      id,
+    );
     res.set({ 'Content-Type': 'application/pdf' });
     return new StreamableFile(buffer);
   }

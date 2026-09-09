@@ -14,7 +14,11 @@ export class ProjectsService {
         ...(query.companyId ? { companyId: query.companyId } : {}),
         ...(query.status ? { status: query.status as never } : {}),
       },
-      include: { company: true, manager: true, tasks: { select: { status: true } } },
+      include: {
+        company: true,
+        manager: true,
+        tasks: { select: { status: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }

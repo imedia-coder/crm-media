@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PasswordService } from '../../core/auth/password.service';
 import { TenantPrismaService } from '../../core/tenancy/tenant-prisma.service';
 import { InviteUserDto } from './dto/invite-user.dto';
@@ -40,7 +44,9 @@ export class UsersService {
 
   async invite(dto: InviteUserDto) {
     if (dto.roleId) {
-      const role = await this.tenantPrisma.client.role.findUnique({ where: { id: dto.roleId } });
+      const role = await this.tenantPrisma.client.role.findUnique({
+        where: { id: dto.roleId },
+      });
       if (!role) throw new NotFoundException('Role not found');
     }
 
@@ -61,8 +67,10 @@ export class UsersService {
         select: SAFE_SELECT,
       })
       .catch((error) => {
-        if (error?.code === 'P2002') {
-          throw new ConflictException('A user with this email already exists for this tenant');
+        if ((error as { code?: string })?.code === 'P2002') {
+          throw new ConflictException(
+            'A user with this email already exists for this tenant',
+          );
         }
         throw error;
       });
@@ -71,7 +79,10 @@ export class UsersService {
   }
 
   async findOneOrThrow(id: string) {
-    const user = await this.tenantPrisma.client.user.findUnique({ where: { id }, select: SAFE_SELECT });
+    const user = await this.tenantPrisma.client.user.findUnique({
+      where: { id },
+      select: SAFE_SELECT,
+    });
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
@@ -88,7 +99,13 @@ export class UsersService {
         ownedDeals: { select: { id: true, title: true, createdAt: true } },
         ownedProjects: { select: { id: true, name: true, createdAt: true } },
         assignedTasks: { select: { id: true, title: true, status: true } },
-        _count: { select: { timeEntries: true, uploadedDocs: true, authoredContent: true } },
+        _count: {
+          select: {
+            timeEntries: true,
+            uploadedDocs: true,
+            authoredContent: true,
+          },
+        },
       },
     });
     if (!user) throw new NotFoundException('User not found');
@@ -126,7 +143,9 @@ export class UsersService {
    */
   async anonymize(id: string, callerId: string) {
     if (id === callerId) {
-      throw new ConflictException('You cannot anonymize your own account while signed in with it');
+      throw new ConflictException(
+        'You cannot anonymize your own account while signed in with it',
+      );
     }
     const existing = await this.findOneOrThrow(id);
     if (existing.anonymizedAt) return existing;
@@ -145,7 +164,10 @@ export class UsersService {
           anonymizedAt: new Date(),
         },
       });
-      await tx.refreshToken.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
+      await tx.refreshToken.updateMany({
+        where: { userId: id, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
     });
 
     return this.findOneOrThrow(id);

@@ -38,7 +38,10 @@ export class QuotesController {
 
   @RequirePermissions(BILLING_PERMISSIONS.QUOTES_READ)
   @Get(':id/pdf')
-  async pdf(@Param('id') id: string, @Res({ passthrough: true }) res: Response) {
+  async pdf(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const buffer = await this.quotesService.renderPdf(id);
     res.set({ 'Content-Type': 'application/pdf' });
     return new StreamableFile(buffer);

@@ -1,4 +1,11 @@
-import { IsDateString, IsEnum, IsNumber, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MinLength,
+} from 'class-validator';
 
 export enum ProjectStatusDto {
   PLANNED = 'PLANNED',
