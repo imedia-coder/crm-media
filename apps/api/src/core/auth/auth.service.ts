@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { DEFAULT_PIPELINE_STAGES } from '../../modules/crm/pipeline-stages/default-stages';
+import { TokenCipherService } from '../crypto/token-cipher.service';
 import { PlatformPrismaService } from '../prisma/platform-prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -28,6 +29,7 @@ export class AuthService {
     private readonly passwordService: PasswordService,
     private readonly tokenService: TokenService,
     private readonly mfaService: MfaService,
+    private readonly tokenCipher: TokenCipherService,
   ) {}
 
   private toAuthenticatedUser(user: UserWithRole): AuthenticatedUser {
@@ -137,10 +139,8 @@ export class AuthService {
     if (!passwordMatches) throw invalid();
 
     if (user.mfaEnabledAt) {
-      if (
-        !dto.mfaCode ||
-        !this.mfaService.verify(dto.mfaCode, user.mfaSecret as string)
-      ) {
+      const secret = this.tokenCipher.decrypt(user.mfaSecret as string);
+      if (!dto.mfaCode || !this.mfaService.verify(dto.mfaCode, secret)) {
         throw new UnauthorizedException('Valid MFA code required');
       }
     }
@@ -176,7 +176,7 @@ export class AuthService {
     const secret = this.mfaService.generateSecret();
     await this.platformPrisma.user.update({
       where: { id: userId },
-      data: { mfaSecret: secret },
+      data: { mfaSecret: this.tokenCipher.encrypt(secret) },
     });
     const otpAuthUrl = this.mfaService.keyUri(user.email, secret);
     const qrCode = await this.mfaService.toQrCodeDataUrl(otpAuthUrl);
@@ -187,7 +187,8 @@ export class AuthService {
     const user = await this.platformPrisma.user.findUniqueOrThrow({
       where: { id: userId },
     });
-    if (!user.mfaSecret || !this.mfaService.verify(code, user.mfaSecret)) {
+    const secret = user.mfaSecret && this.tokenCipher.decrypt(user.mfaSecret);
+    if (!secret || !this.mfaService.verify(code, secret)) {
       throw new UnauthorizedException('Invalid MFA code');
     }
     await this.platformPrisma.user.update({
@@ -200,7 +201,8 @@ export class AuthService {
     const user = await this.platformPrisma.user.findUniqueOrThrow({
       where: { id: userId },
     });
-    if (!user.mfaSecret || !this.mfaService.verify(code, user.mfaSecret)) {
+    const secret = user.mfaSecret && this.tokenCipher.decrypt(user.mfaSecret);
+    if (!secret || !this.mfaService.verify(code, secret)) {
       throw new UnauthorizedException('Invalid MFA code');
     }
     await this.platformPrisma.user.update({

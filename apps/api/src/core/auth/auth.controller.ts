@@ -1,4 +1,5 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Public } from './decorators/public.decorator';
@@ -13,12 +14,17 @@ import type { AuthenticatedUser } from './types/jwt-payload.interface';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // Endpoints publics (pas de JWT a verifier) : la limite par IP est la
+  // seule protection contre le brute-force / bourrage d'identifiants tant
+  // qu'il n'y a pas de verrouillage de compte dedie.
+  @Throttle({ default: { limit: 5, ttl: 3_600_000 } })
   @Public()
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 300_000 } })
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('login')
@@ -45,6 +51,9 @@ export class AuthController {
     return this.authService.setupMfa(user.id);
   }
 
+  // Limite le brute-force du code TOTP a 6 chiffres — authentifie mais
+  // ne veut pas dire de confiance illimitee sur ce point d'entree.
+  @Throttle({ default: { limit: 5, ttl: 300_000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('mfa/enable')
   async enableMfa(
@@ -54,6 +63,7 @@ export class AuthController {
     await this.authService.enableMfa(user.id, dto.code);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 300_000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('mfa/disable')
   async disableMfa(
@@ -63,6 +73,7 @@ export class AuthController {
     await this.authService.disableMfa(user.id, dto.code);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 900_000 } })
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('change-password')
   async changePassword(
