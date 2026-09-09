@@ -63,8 +63,8 @@ export class InvoicesService {
     });
   }
 
-  findAll(query: ListInvoicesQuery) {
-    return this.tenantPrisma.client.invoice.findMany({
+  async findAll(query: ListInvoicesQuery) {
+    const invoices = await this.tenantPrisma.client.invoice.findMany({
       where: {
         ...(query.companyId ? { companyId: query.companyId } : {}),
         ...(query.status ? { status: query.status as never } : {}),
@@ -72,6 +72,11 @@ export class InvoicesService {
       include: { company: true, lines: true, payments: true },
       orderBy: { createdAt: 'desc' },
     });
+    // Meme calcul en memoire que findOneOrThrow (totals/amountPaid/amountDue)
+    // — aucune requete supplementaire, lines/payments sont deja charges
+    // ci-dessus. Sans ça, la liste renvoyait des factures sans ces champs
+    // et le tableau du dashboard affichait "Total TTC"/"Reste dû" vides.
+    return invoices.map((invoice) => this.withComputedFields(invoice));
   }
 
   async findOneOrThrow(id: string) {

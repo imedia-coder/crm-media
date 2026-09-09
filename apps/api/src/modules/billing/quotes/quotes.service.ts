@@ -21,8 +21,8 @@ export class QuotesService {
     private readonly automation: AutomationService,
   ) {}
 
-  findAll(query: ListQuotesQuery) {
-    return this.tenantPrisma.client.quote.findMany({
+  async findAll(query: ListQuotesQuery) {
+    const quotes = await this.tenantPrisma.client.quote.findMany({
       where: {
         ...(query.companyId ? { companyId: query.companyId } : {}),
         ...(query.status ? { status: query.status as never } : {}),
@@ -30,6 +30,14 @@ export class QuotesService {
       include: { company: true, lines: true },
       orderBy: { createdAt: 'desc' },
     });
+    // Meme calcul en memoire que findOneOrThrow (totals) — aucune requete
+    // supplementaire, lines est deja charge ci-dessus. Sans ça, la liste
+    // renvoyait des devis sans ce champ et le tableau du dashboard
+    // affichait "Total TTC" vide.
+    return quotes.map((quote) => ({
+      ...quote,
+      totals: computeTotals(quote.lines),
+    }));
   }
 
   async findOneOrThrow(id: string) {
