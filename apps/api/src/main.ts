@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 
 /**
@@ -34,7 +35,12 @@ async function bootstrap() {
   const allowedOrigins = (process.env.WEB_APP_URL ?? 'http://localhost:3000')
     .split(',')
     .map((origin) => origin.trim());
-  app.enableCors({ origin: allowedOrigins });
+  // credentials: true — necessaire pour que le navigateur envoie/accepte le
+  // cookie httpOnly du refresh token (voir TokenService/auth.controller) sur
+  // des requetes cross-origin ; sans danger ici puisque origin n'est jamais
+  // un wildcard (liste explicite ci-dessus).
+  app.enableCors({ origin: allowedOrigins, credentials: true });
+  app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

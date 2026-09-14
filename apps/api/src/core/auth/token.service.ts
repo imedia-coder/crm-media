@@ -38,9 +38,15 @@ export class TokenService {
     });
   }
 
+  /** Exposee pour que auth.controller.ts pose le cookie httpOnly avec le
+   * meme maxAge que l'expiration reelle du jeton en base. */
+  getRefreshTokenTtlMs(): number {
+    return this.parseTtlMs(process.env.JWT_REFRESH_TTL ?? '7d');
+  }
+
   async issueRefreshToken(userId: string): Promise<string> {
     const token = randomBytes(REFRESH_TOKEN_BYTES).toString('hex');
-    const ttlMs = this.parseTtlMs(process.env.JWT_REFRESH_TTL ?? '7d');
+    const ttlMs = this.getRefreshTokenTtlMs();
     await this.platformPrisma.refreshToken.create({
       data: {
         userId,

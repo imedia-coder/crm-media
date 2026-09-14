@@ -1,7 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 const ACCESS_TOKEN_KEY = "crm_access_token";
-const REFRESH_TOKEN_KEY = "crm_refresh_token";
 
 export class ApiError extends Error {
   constructor(
@@ -18,19 +17,16 @@ export function getAccessToken(): string | null {
   return window.localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-export function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(REFRESH_TOKEN_KEY);
-}
-
-export function setTokens(accessToken: string, refreshToken: string): void {
+// Le refresh token n'est plus stocke ici : l'API le pose en cookie httpOnly
+// (voir auth.controller.ts), illisible en JS — protection contre le vol par
+// XSS. Le navigateur l'attache automatiquement (credentials: "include")
+// sur les appels a /auth/refresh et /auth/logout.
+export function setAccessToken(accessToken: string): void {
   window.localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
-  window.localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 }
 
 export function clearTokens(): void {
   window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-  window.localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
 export function decodeJwt<T>(token: string): T | null {
@@ -62,23 +58,19 @@ function refreshAccessToken(): Promise<string | null> {
 }
 
 async function doRefresh(): Promise<string | null> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return null;
-
+  // Pas de body : le refresh token voyage dans le cookie httpOnly, envoye
+  // automatiquement par le navigateur grace a credentials: "include".
   const res = await fetch(`${API_URL}/auth/refresh`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refreshToken }),
+    credentials: "include",
   });
   if (!res.ok) {
     clearTokens();
     return null;
   }
-  const data = (await res.json()) as {
-    accessToken: string;
-    refreshToken: string;
-  };
-  setTokens(data.accessToken, data.refreshToken);
+  const data = (await res.json()) as { accessToken: string };
+  setAccessToken(data.accessToken);
   return data.accessToken;
 }
 
@@ -104,6 +96,7 @@ async function request<T>(
   const res = await fetch(`${API_URL}${path}`, {
     method: options.method ?? "GET",
     headers,
+    credentials: "include",
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
   });
 
@@ -138,6 +131,7 @@ export async function apiDownload(path: string): Promise<Blob> {
   const token = getAccessToken();
   const res = await fetch(`${API_URL}${path}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
   });
   if (!res.ok) throw new ApiError(res.status, res.statusText);
   return res.blob();
@@ -151,6 +145,7 @@ export async function apiUpload<T>(
   const res = await fetch(`${API_URL}${path}`, {
     method: "POST",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
     body: formData,
   });
   if (!res.ok) {
@@ -175,6 +170,7 @@ export async function streamChat(
         "Content-Type": "application/json",
         ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
+      credentials: "include",
       body: JSON.stringify(body),
     });
 

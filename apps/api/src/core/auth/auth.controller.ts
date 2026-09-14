@@ -1,5 +1,15 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import type { CookieOptions, Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { AuthenticatedOnly } from './decorators/authenticated-only.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
@@ -7,13 +17,45 @@ import { Public } from './decorators/public.decorator';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { MfaCodeDto } from './dto/mfa-code.dto';
-import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
+import { TokenService } from './token.service';
 import type { AuthenticatedUser } from './types/jwt-payload.interface';
+
+const REFRESH_COOKIE_NAME = 'refresh_token';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly tokenService: TokenService,
+  ) {}
+
+  // Le refresh token ne transite jamais par le JSON ni le localStorage cote
+  // front : cookie httpOnly, illisible en JS (protection contre le vol par
+  // XSS). sameSite: 'lax' suffit contre le CSRF ici — le cookie n'est de
+  // toute facon jamais envoye sur une requete cross-site POST sous Lax, et
+  // même consomme via CSRF l'attaquant ne peut pas lire la reponse (CORS
+  // restreint a WEB_APP_URL). path: '/auth' — jamais envoye en dehors des
+  // routes qui en ont besoin.
+  private cookieOptions(): CookieOptions {
+    return {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/auth',
+    };
+  }
+
+  private setRefreshCookie(res: Response, refreshToken: string): void {
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
+      ...this.cookieOptions(),
+      maxAge: this.tokenService.getRefreshTokenTtlMs(),
+    });
+  }
+
+  private clearRefreshCookie(res: Response): void {
+    res.clearCookie(REFRESH_COOKIE_NAME, this.cookieOptions());
+  }
 
   // Endpoints publics (pas de JWT a verifier) : la limite par IP est la
   // seule protection contre le brute-force / bourrage d'identifiants tant
@@ -21,30 +63,54 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 3_600_000 } })
   @Public()
   @Post('register')
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { refreshToken, ...rest } = await this.authService.register(dto);
+    this.setRefreshCookie(res, refreshToken);
+    return rest;
   }
 
   @Throttle({ default: { limit: 10, ttl: 300_000 } })
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { refreshToken, ...rest } = await this.authService.login(dto);
+    this.setRefreshCookie(res, refreshToken);
+    return rest;
   }
 
   @Public()
   @HttpCode(HttpStatus.OK)
   @Post('refresh')
-  refresh(@Body() dto: RefreshDto) {
-    return this.authService.refresh(dto.refreshToken);
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] as
+      string | undefined;
+    if (!refreshToken) {
+      throw new UnauthorizedException('Missing refresh token');
+    }
+    const { refreshToken: rotated, ...rest } =
+      await this.authService.refresh(refreshToken);
+    this.setRefreshCookie(res, rotated);
+    return rest;
   }
 
   @Public()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Post('logout')
-  async logout(@Body() dto: RefreshDto) {
-    await this.authService.logout(dto.refreshToken);
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME] as
+      string | undefined;
+    if (refreshToken) await this.authService.logout(refreshToken);
+    this.clearRefreshCookie(res);
   }
 
   // Gere son propre MFA/mot de passe — pas besoin d'une permission

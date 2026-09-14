@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { api, clearTokens, decodeJwt, getAccessToken, getRefreshToken, setTokens } from './api';
+import { api, clearTokens, decodeJwt, getAccessToken, setAccessToken } from './api';
 
 export interface AuthUser {
   sub: string;
@@ -22,7 +22,8 @@ interface AuthResponse {
   tenant: TenantInfo;
   user: { id: string; email: string; firstName: string; lastName: string };
   accessToken: string;
-  refreshToken: string;
+  // Pas de refreshToken ici : l'API le pose directement en cookie httpOnly
+  // (Set-Cookie), jamais dans le corps JSON — voir apps/api auth.controller.ts.
 }
 
 interface RegisterDto {
@@ -56,7 +57,7 @@ const DISPLAY_NAME_KEY = 'crm_display_name';
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 function applyAuthResponse(data: AuthResponse) {
-  setTokens(data.accessToken, data.refreshToken);
+  setAccessToken(data.accessToken);
   window.localStorage.setItem(TENANT_KEY, JSON.stringify(data.tenant));
   window.localStorage.setItem(DISPLAY_NAME_KEY, `${data.user.firstName} ${data.user.lastName}`);
 }
@@ -98,10 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    const refreshToken = getRefreshToken();
-    if (refreshToken) {
-      await api.post('/auth/logout', { refreshToken }, { skipAuth: true }).catch(() => undefined);
-    }
+    // Le refresh token voyage dans le cookie httpOnly, envoye automatiquement
+    // par le navigateur — rien a lire/envoyer explicitement ici.
+    await api.post('/auth/logout', undefined, { skipAuth: true }).catch(() => undefined);
     clearTokens();
     window.localStorage.removeItem(TENANT_KEY);
     window.localStorage.removeItem(DISPLAY_NAME_KEY);
